@@ -1,0 +1,1 @@
+[{"id":1,"sender":1,"receiver":2,"message":"test message","timeSent":"Oct 27, 2010 6:58:22 AM"}]

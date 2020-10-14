@@ -1,0 +1,1 @@
+[{"id":1,"title":"Terrible Product","message":"It didn\u0027t taste like candy","ratedVal":1.3},{"id":2,"title":"Actually, the best product I\u0027ve purchased","message":"I realized it wasn\u0027t candy","ratedVal":5.0}]

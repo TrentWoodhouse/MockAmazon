@@ -1,26 +1,17 @@
-package main.java.com.congo.rest;
+package com.congo.rest;
+
+import java.util.ArrayList;
 
 public class User {
 
-	private long id;
-	private String name;
-	private String password;
-	private int[] messages;
+	public long id;
+	public String name;
+	public String password;
+	public ArrayList<Integer> messages;
 
-	public User(long id, String name) {
-		this.id = id;
-		this.name = name;
-	}
-
-	public long getId() {
-		return id;
-	}
-
-	public String getName() {
-		return name;
-	}
+	public User(){}
 
 	public boolean verifyUser(String password){
-		return this.password == password;
+		return this.password.equals(password);
 	}
 }

@@ -1,4 +1,4 @@
-package main.java.com.congo.rest;
+package com.congo.rest;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
