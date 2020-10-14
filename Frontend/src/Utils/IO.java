@@ -44,7 +44,7 @@ public class IO {
     }
 
     public String prompt() {
-        System.out.print("> ");
+        System.out.print("$ ");
         String str = in.nextLine();
         lastResponse = str;
         return str;

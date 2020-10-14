@@ -2,17 +2,21 @@ package Controllers;
 
 import Entities.Response;
 import Enums.Status;
+import Utils.Global;
 
-public class BuyerController implements Controller {
+public class BuyerController extends Controller {
 
+    @Override
     public Response execute(String command) {
         String[] exArr = command.trim().split("\\s+");
         try {
-            switch(exArr[0]) {
+            switch(exArr[0].toLowerCase()) {
+                case "menu":
+                    return menu();
                 case "giveFeedback":
                     return giveFeedback();
                 default:
-                    return new Response("No command \"" + exArr[0] + "\" found.", Status.ERROR);
+                    return super.execute(command);
             }
         }
         catch (IndexOutOfBoundsException e) {
@@ -21,6 +25,12 @@ public class BuyerController implements Controller {
         catch (Exception e) {
             return new Response(e.getMessage(), Status.ERROR);
         }
+    }
+
+    @Override
+    public Response menu() {
+        Global.io.print("giveFeedback:\t\t\tgive feedback on a particular listing");
+        return super.menu();
     }
 
     public Response giveFeedback() {

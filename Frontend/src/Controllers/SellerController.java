@@ -2,19 +2,25 @@ package Controllers;
 
 import Entities.Response;
 import Enums.Status;
+import Utils.Global;
 
-public class SellerController implements Controller {
+import java.util.ArrayList;
 
+public class SellerController extends Controller {
+
+    @Override
     public Response execute(String command) {
         String[] exArr = command.trim().split("\\s+");
         try {
-            switch(exArr[0]) {
+            switch(exArr[0].toLowerCase()) {
                 case "showListings":
                     return showListings();
+                case "createListing":
+                    return createListing();
                 case "editListing":
                     return editListing(Integer.parseInt(exArr[1]));
                 default:
-                    return new Response("No command \"" + exArr[0] + "\" found.", Status.ERROR);
+                    return super.execute(command);
             }
         }
         catch (IndexOutOfBoundsException e) {
@@ -25,9 +31,21 @@ public class SellerController implements Controller {
         }
     }
 
+    @Override
+    public Response menu() {
+        Global.io.print("showListings:\t\t\tshows all your posted listings\n" +
+                "editListing [id]:\t\tedit listing with the given id");
+        return super.menu();
+    }
+
     public Response showListings() {
         //TODO
         return new Response("Listing 1\nListing 2");
+    }
+
+    public Response createListing() {
+        //TODO
+        return new Response("Created new listing");
     }
 
     public Response editListing(int id) {

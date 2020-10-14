@@ -3,14 +3,15 @@ package Controllers;
 import Entities.Response;
 import Enums.Status;
 
-public class AdminController implements Controller {
+public class AdminController extends Controller {
 
+    @Override
     public Response execute(String command) {
         String[] exArr = command.trim().split("\\s+");
         try {
-            switch(exArr[0]) {
+            switch(exArr[0].toLowerCase()) {
                 default:
-                    return new Response("No command \"" + exArr[0] + "\" found.", Status.ERROR);
+                    return super.execute(command);
             }
         }
         catch (IndexOutOfBoundsException e) {
