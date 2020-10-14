@@ -5,6 +5,7 @@ import java.util.Scanner;
 
 public class IO {
     private Scanner in;
+    private String lastResponse;
 
     public IO() {
         in = new Scanner(System.in);
@@ -44,16 +45,26 @@ public class IO {
 
     public String prompt() {
         System.out.print("> ");
-        return in.nextLine();
+        String str = in.nextLine();
+        lastResponse = str;
+        return str;
     }
 
     public String question(String qstn) {
         System.out.println(qstn);
-        return in.nextLine();
+        String str = in.nextLine();
+        lastResponse = str;
+        return str;
     }
 
     public String inlineQuestion(String qstn) {
         System.out.print(qstn + " ");
-        return in.nextLine();
+        String str = in.nextLine();
+        lastResponse = str;
+        return str;
+    }
+
+    public String getLastResponse() {
+        return lastResponse;
     }
 }
