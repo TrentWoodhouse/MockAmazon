@@ -75,7 +75,11 @@ public class SellerController extends Controller {
 
     public Response editListing(int id) {
         try {
-            JSONObject listing = new JSONObject(Global.sendGet("/listing?id=" + id).getMessage());
+            JSONArray listingArray = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+            if (listingArray.length() != 1) {
+                throw new RuntimeException("The listing doesn't exist");
+            }
+            JSONObject listing = listingArray.getJSONObject(0);
             String name = listing.getString("name");
             String fullDescription = listing.getString("description");
             String description = fullDescription.substring(0, Math.min(fullDescription.length(), 30)) + "...";
@@ -91,7 +95,7 @@ public class SellerController extends Controller {
             return Global.sendPatch("/listing", jsonString);
         }
         catch(Exception e) {
-            return new Response("The listing cannot be edited", Status.ERROR);
+            return new Response("The listing cannot be edited: " + e.getMessage(), Status.ERROR);
         }
     }
 

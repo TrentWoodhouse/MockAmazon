@@ -103,7 +103,6 @@ public class ListingController {
 				Listing u = listings.get(i);
 				if (u.id == listing.id || u.name.equals(listing.name)) {
 					listings.set(i, listing);
-					return "Succeeded In Updating Listing";
 				}
 			}
 		}
@@ -115,7 +114,7 @@ public class ListingController {
 			writer.write(new Gson().toJson(listings));
 			writer.close();
 
-			return "Successfully Sent Listing";
+			return "Successfully Updated Listing";
 		} catch (Exception e){
 			System.out.println(e);
 		}

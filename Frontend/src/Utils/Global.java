@@ -3,10 +3,12 @@ package Utils;
 import Classes.User;
 import Entities.Response;
 import Enums.Status;
+import sun.net.www.protocol.https.HttpsURLConnectionImpl;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -49,8 +51,18 @@ public class Global {
         try {
             URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty("X-HTTP-Method-Override", "PATCH");
-            connection.setRequestMethod("POST");
+            final Object target;
+            if (connection instanceof HttpsURLConnectionImpl) {
+                final Field delegate = HttpsURLConnectionImpl.class.getDeclaredField("delegate");
+                delegate.setAccessible(true);
+                target = delegate.get(connection);
+            } else {
+                target = connection;
+            }
+            final Field f = HttpURLConnection.class.getDeclaredField("method");
+            f.setAccessible(true);
+            f.set(target, "PATCH");
+
             connection.setDoOutput(true);
 
             byte[] out = json.getBytes(StandardCharsets.UTF_8);
