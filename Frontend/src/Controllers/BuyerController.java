@@ -23,7 +23,7 @@ public class BuyerController extends Controller {
                 case "menu":
                     return menu();
                 case "givefeedback":
-                    return giveFeedback();
+                    return giveFeedback(Integer.parseInt(exArr[1]));
                 case "sendmessage":
                     return sendMessage();
                 case "viewmessages":
@@ -48,18 +48,40 @@ public class BuyerController extends Controller {
 
     @Override
     public Response menu() {
-        Global.io.print("giveFeedback:\t\t\tgive feedback on a particular listing");
+        Global.io.print("giveFeedback [listingId]: give feedback on a particular listing");
         Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
-        Global.io.print("search:\t\t\t\tsearch available product listings");
-        Global.io.print("viewCart:\t\t\tview all items in your cart");
+        Global.io.print("search:\t\t\t\t\tsearch available product listings");
+        Global.io.print("viewCart:\t\t\t\tview all items in your cart");
         Global.io.print("addToCart [id]:\t\t\tadd an item to your cart");
         return super.menu();
     }
 
-    public Response giveFeedback() {
-        //TODO
-        return new Response("You have given feedback. Thanks!");
+    public Response giveFeedback(int id) {
+        try {
+            JSONArray listingArray = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+            if (listingArray.length() != 1) {
+                throw new RuntimeException("The listing doesn't exist");
+            }
+            JSONObject listing = listingArray.getJSONObject(0);
+            JSONObject rating = new JSONObject();
+
+            String name = listing.getString("name");
+            String fullDescription = listing.getString("description");
+            String description = fullDescription.substring(0, Math.min(fullDescription.length(), 30)) + "...";
+            String cost = "$" + Double.toString(listing.getDouble("cost"));
+
+            Global.io.print(new String[]{name, description, cost});
+            Global.io.print("Enter your feedback:");
+            rating.put("title", Global.io.inlineQuestion("Name:"));
+            rating.put("message", Global.io.inlineQuestion("Description:"));
+            rating.put("ratedVal", Global.io.inlineQuestion("Rated value (1.0 - 5.0):"));
+
+            return Global.sendPost("/rating", rating.toString());
+        }
+        catch(Exception e) {
+            return new Response("The listing cannot be given a rating: " + e.getMessage(), Status.ERROR);
+        }
     }
 
     public Response sendMessage() {
