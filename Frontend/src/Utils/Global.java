@@ -3,10 +3,12 @@ package Utils;
 import Classes.User;
 import Entities.Response;
 import Enums.Status;
+import sun.net.www.protocol.https.HttpsURLConnectionImpl;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -45,11 +47,22 @@ public class Global {
         }
     }
 
-    public static String sendPatch(String urlString, String json){
+    public static Response sendPatch(String route, String json){
         try {
-            URL url = new URL(urlString);
+            URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("PATCH");
+            final Object target;
+            if (connection instanceof HttpsURLConnectionImpl) {
+                final Field delegate = HttpsURLConnectionImpl.class.getDeclaredField("delegate");
+                delegate.setAccessible(true);
+                target = delegate.get(connection);
+            } else {
+                target = connection;
+            }
+            final Field f = HttpURLConnection.class.getDeclaredField("method");
+            f.setAccessible(true);
+            f.set(target, "PATCH");
+
             connection.setDoOutput(true);
 
             byte[] out = json.getBytes(StandardCharsets.UTF_8);
@@ -60,7 +73,7 @@ public class Global {
                 OutputStream os = connection.getOutputStream();
                 os.write(out);
             } catch (Exception e) {
-                return "";
+                return new Response(e.getMessage(), Status.ERROR);
             }
 
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -68,9 +81,9 @@ public class Global {
             //System.out.println(inputLine);
             in.close();
 
-            return inputLine;
+            return new Response(inputLine);
         } catch(Exception e){
-            return "";
+            return new Response(e.getMessage(), Status.ERROR);
         }
     }
 

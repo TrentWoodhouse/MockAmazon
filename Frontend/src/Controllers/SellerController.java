@@ -42,7 +42,7 @@ public class SellerController extends Controller {
     @Override
     public Response menu() {
         Global.io.print("showListings:\t\t\tshows all your posted listings\n" +
-                "createListing:\t\t\tcreate a new listing]\n" +
+                "createListing:\t\t\tcreate a new listing\n" +
                 "editListing [id]:\t\tedit listing with the given id");
         Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
@@ -75,7 +75,11 @@ public class SellerController extends Controller {
 
     public Response editListing(int id) {
         try {
-            JSONObject listing = new JSONObject(Global.sendGet("/listing?id=" + id).getMessage());
+            JSONArray listingArray = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+            if (listingArray.length() != 1) {
+                throw new RuntimeException("The listing doesn't exist");
+            }
+            JSONObject listing = listingArray.getJSONObject(0);
             String name = listing.getString("name");
             String fullDescription = listing.getString("description");
             String description = fullDescription.substring(0, Math.min(fullDescription.length(), 30)) + "...";
@@ -88,10 +92,10 @@ public class SellerController extends Controller {
             listing.put("cost", Global.io.inlineQuestion("Cost [" + cost + "]:", costVal));
             String jsonString = listing.toString();
 
-            return Global.sendPost("/listing", jsonString); //TODO update listing properly
+            return Global.sendPatch("/listing", jsonString);
         }
         catch(Exception e) {
-            return new Response("The listing was not created successfully", Status.ERROR);
+            return new Response("The listing cannot be edited: " + e.getMessage(), Status.ERROR);
         }
     }
 
