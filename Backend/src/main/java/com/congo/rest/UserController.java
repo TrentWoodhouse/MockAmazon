@@ -46,11 +46,12 @@ public class UserController {
 			if (users == null) users = new ArrayList<>();
 		}
 		for(User u : users) {
-			if (u.id == user.id) {
+			if (u.id == user.id || u.name.equals(user.name)) {
 				return "Failed to send User (incorrect ID)";
 			}
 		}
 
+		user.id = users.size()+1;
 		users.add(user);
 
 		//attempt to add the new Json to a file

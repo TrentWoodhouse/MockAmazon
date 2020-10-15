@@ -15,6 +15,10 @@ public class BuyerController extends Controller {
                     return menu();
                 case "giveFeedback":
                     return giveFeedback();
+                case "sendMessage":
+                    return sendMessage();
+                case "viewMessages":
+                    return viewMessages();
                 default:
                     return super.execute(command);
             }
@@ -30,11 +34,22 @@ public class BuyerController extends Controller {
     @Override
     public Response menu() {
         Global.io.print("giveFeedback:\t\t\tgive feedback on a particular listing");
+        Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
+        Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
         return super.menu();
     }
 
     public Response giveFeedback() {
         //TODO
         return new Response("You have given feedback. Thanks!");
+    }
+
+    public Response sendMessage(){
+
+        return new Response("Message Successfully Sent");
+    }
+    public Response viewMessages(){
+
+        return new Response(" - End of Messages - ");
     }
 }

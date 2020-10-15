@@ -8,8 +8,10 @@ import Controllers.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 import com.google.gson.Gson;
 import org.json.JSONObject;
@@ -21,42 +23,94 @@ public class Main {
         Global.router.addPath("seller", new SellerController());
         Global.router.addPath("buyer", new BuyerController());
 
+
+        //Intro!
+        System.out.println("                                                                                ");
+        System.out.println("                                      %%%%%                                     ");
+        System.out.println("                                   %%%%%%%%%%%                                  ");
+        System.out.println("                             ######### %%% #########                            ");
+        System.out.println("                           #############(#############                          ");
+        System.out.println("                          ##############(##############                         ");
+        System.out.println("                      ((((((((( ### ((((((((( ### (((((((((                     ");
+        System.out.println("                   ((((((((((((((#(((((((((((((#(((((((((((((                   ");
+        System.out.println("               %%%%%%   ((((  %%%%%%  (((((  %%%%%%  ((((   %%%%%               ");
+        System.out.println("            %%%%%%%%%%%#   %%%%%%%%%%%%   #%%%%%%%%%%%  %%%%%%%%%%%%            ");
+        System.out.println("      %%%%%%%%%%   %%%%%%%%%%      %%%%%%%%%      %%%%%%%%%     %%%%%#%%%%%     ");
+        System.out.println("   %%%            %%          %% %%%         %%  %%         %% %%          %%%  ");
+        System.out.println("  /%*            %%            %%%            %,%%           .%%             %% ");
+        System.out.println("  %%             %%            %%%             %%             %%             %% ");
+        System.out.println("   %%             %%          %%%%             %%%           %%%%          %%%  ");
+        System.out.println("     %%%%%%%%%%%   #%%%%%%%%%%% %%             %  %%%%%%%%%%% %% %%%%%%%%%%%    ");
+        System.out.println("                                                              %%                ");
+        System.out.println("                                                             *%%                ");
+        System.out.println("                                                 %%%        %%%                 ");
+        System.out.println("                                                    %%%%%%%%%                   ");
+        System.out.println("                                                                                ");
+        System.out.println("                                Welcome to Congo!                               ");
+        System.out.println("                                                                                ");
+
         boolean authenticated = false;
         UserType userType = null;
         while(!authenticated) {
-            while(userType == null) {
-                String response = Global.io.question("Are you a [buyer], a [seller], or an [admin]?");
+            String response = Global.io.question("Are you a [buyer], a [seller], an [admin], or [new]?");
+            if(response.equals("new")){     //make a new account
+                String inputLine = null;
+                do {
+                    String name = Global.io.inlineQuestion("New Username: ");
+                    String password = Global.io.inlineQuestion("New Password: ");
+                    String role = Global.io.inlineQuestion("New Role (buyer or seller): ");
+
+                    User tmp = new User();
+                    tmp.id = 4;
+                    tmp.name = name;
+                    tmp.password = password;
+
+                    if(role.equals("buyer") || role.equals("seller")) {
+
+                        inputLine = sendPost("http://localhost:8080/user", new Gson().toJson(tmp).toString());
+
+                        inputLine = sendPost("http://localhost:8080/"+role, new Gson().toJson(tmp).toString());
+
+                        if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller")) {
+                            Global.io.print("Successfully Created Your Account!");
+                        } else {
+                            Global.io.error("Failed to Create Your Account... Please Try Again");
+                        }
+                    }  else {
+                        Global.io.error("Please Enter 'buyer' or 'seller' For a Role");
+                    }
+                } while(inputLine != null && !inputLine.equals("Successfully Sent User") && !inputLine.equals("Successfully Sent Buyer") && !inputLine.equals("Successfully Sent Seller"));
+
+            } else {                        //log in an existing account
                 for (UserType u : UserType.values()) {
                     if (u.name().toLowerCase().equals(response.toLowerCase())) {
                         userType = u;
                     }
                 }
-            }
+                if(userType != null){
+                    String name = Global.io.inlineQuestion(" Username: ");
+                    String pass = Global.io.inlineQuestion(" Password: ");
 
-            String name = Global.io.inlineQuestion(" Username:");
-            String pass = Global.io.inlineQuestion(" Password:");
+                    //Add an HTTP connection
+                    try {
+                        String inputLine = sendGet("http://localhost:8080/"+ response +"?name=" + name);
 
-            //Add an HTTP connection
-            try {
-                URL url = new URL("http://localhost:8080/user?name="+name);
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");     //insecure, I know
-                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                String inputLine = in.readLine();
-                in.close();
+                        //create a json object, and verify the password
+                        JSONObject json = new JSONObject(inputLine);
+                        if (json.get("password").equals(pass)) {
+                            authenticated = true;
+                            Global.currUser = new Gson().fromJson(inputLine, User.class);
+                        } else {
+                            Global.io.error("Incorrect Password");
+                        }
 
-                //create a json object, and verify the password
-                JSONObject json = new JSONObject(inputLine);
-                if(json.get("password").equals(pass)){
-                    authenticated = true;
-                    Global.currUser = new Gson().fromJson(inputLine, User.class);
+                    } catch (Exception e) {
+                        //System.out.println(e);
+                        Global.io.error("Incorrect Username");
+                    }
                 } else {
-                    Global.io.error("Incorrect Password");
+                    Global.io.error(" Please enter 'buyer', 'seller', 'admin', or 'new'");
                 }
-
-            } catch(Exception e){
-                //System.out.println(e);
-                Global.io.error("Incorrect Username");
             }
         }
 
@@ -91,6 +145,50 @@ public class Main {
                 default:
                     Global.io.error(response.getMessage());
             }
+        }
+    }
+
+    public static String sendPost(String urlString, String json){
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+
+            byte[] out = json.getBytes(StandardCharsets.UTF_8);
+            connection.setFixedLengthStreamingMode(out.length);
+            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            connection.connect();
+            try {
+                OutputStream os = connection.getOutputStream();
+                os.write(out);
+            } catch (Exception e) {
+                return "";
+            }
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine = in.readLine();
+            //System.out.println(inputLine);
+            in.close();
+
+            return inputLine;
+        } catch(Exception e){
+            return "";
+        }
+    }
+
+    public static String sendGet(String urlString){
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");     //insecure, I know
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine = in.readLine();
+            in.close();
+
+            return inputLine;
+        } catch(Exception e){
+            return "";
         }
     }
 }
