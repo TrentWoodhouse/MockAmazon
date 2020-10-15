@@ -73,8 +73,8 @@ public class BuyerController extends Controller {
 
             Global.io.print(new String[]{name, description, cost});
             Global.io.print("Enter your feedback:");
-            rating.put("title", Global.io.inlineQuestion("Name:"));
-            rating.put("message", Global.io.inlineQuestion("Description:"));
+            rating.put("title", Global.io.inlineQuestion("Title:"));
+            rating.put("message", Global.io.inlineQuestion("Message:"));
             rating.put("ratedVal", Global.io.inlineQuestion("Rated value (1.0 - 5.0):"));
 
             return Global.sendPost("/rating", rating.toString());
