@@ -1,18 +1,12 @@
+import Classes.Buyer;
 import Classes.User;
 import Controllers.Controller;
 import Entities.Response;
 import Enums.UserType;
-import Utils.*;
 import Controllers.*;
 import Utils.Global;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import com.google.gson.Gson;
 import org.json.JSONObject;
@@ -61,19 +55,38 @@ public class Main {
                     String password = Global.io.inlineQuestion("New Password: ");
                     String role = Global.io.inlineQuestion("New Role (buyer or seller): ");
 
-                    User tmp = new User();
-                    tmp.id = 0;
+                    User tmp;
+                    if (role.equals("buyer")) {
+                        tmp = new Buyer(new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>());
+                    } else {
+                        tmp = new User();
+                    }
+                    tmp.id = 4;
                     tmp.name = name;
                     tmp.password = password;
 
                     if(role.equals("buyer") || role.equals("seller")) {
 
-                        inputLine = Global.sendPost("/user", new Gson().toJson(tmp).toString()).getMessage();
+                        try {
+                            //add the user to user
+                            inputLine = Global.sendPost("/user", new Gson().toJson(tmp).toString()).getMessage();
 
-                        inputLine = Global.sendPost("/"+role, new Gson().toJson(tmp).toString()).getMessage();
+                            //fetch the id from the created user
+                            inputLine = Global.sendGet("/user?name=" + name).getMessage();
+                            JSONObject json = new JSONObject(inputLine);
+                            long id = json.getLong("id");
+                            tmp.id = id;
+
+                            //make the specific role using the same id (for searches where you dont know the role)
+                            inputLine = Global.sendPost("/" + role, new Gson().toJson(tmp).toString()).getMessage();
+
+                        } catch(Exception e){
+                            continue;
+                        }
 
                         if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller")) {
                             Global.io.print("Successfully Created Your Account!");
+
                         } else {
                             Global.io.error("Failed to Create Your Account... Please Try Again");
                         }

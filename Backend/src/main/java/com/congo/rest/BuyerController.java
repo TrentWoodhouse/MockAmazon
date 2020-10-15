@@ -20,6 +20,7 @@ public class BuyerController {
 	@GetMapping("/buyer")
 	public Buyer getBuyer(@RequestParam Map<String, String> input) {
 
+		//load the file into memory if it isn't already
 		if (buyers == null) {
 			if (buyerFile.exists()) {
 				scanJsonFile();
@@ -51,7 +52,6 @@ public class BuyerController {
 			}
 		}
 
-		buyer.id = buyers.size()+1;
 		buyers.add(buyer);
 
 		//attempt to add the new Json to a file

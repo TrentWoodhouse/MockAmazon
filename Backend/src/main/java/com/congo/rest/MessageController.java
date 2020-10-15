@@ -17,8 +17,9 @@ public class MessageController {
 	private File messageFile = new File("./storage/messages.txt");
 
 	@GetMapping("/message")
-	public Message getMessage(@RequestParam(value = "id", defaultValue = "") String id) {
+	public ArrayList<Message> getMessage(@RequestParam(value = "id", defaultValue = "") String id) {
 
+		//load the file into memory if it isn't already
 		if (messages == null) {
 			if (messageFile.exists()) {
 				scanJsonFile();
@@ -27,14 +28,15 @@ public class MessageController {
 			}
 		}
 
+		ArrayList<Message> messageList = new ArrayList<Message>();
 		//find the specified message (or all)
 		for(Message m : messages){
-			if(m.id == Long.parseLong(id)){
-				return m;
+			if(m.receiver == Long.parseLong(id) || m.sender == Long.parseLong(id)){
+				messageList.add(m);
 			}
 		}
 
-		return null;
+		return messageList;
 	}
 
 	@PostMapping("/message")

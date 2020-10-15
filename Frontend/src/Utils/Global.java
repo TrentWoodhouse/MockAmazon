@@ -75,7 +75,7 @@ public class Global {
         }
     }
 
-        public static Response sendGet(String route){
+    public static Response sendGet(String route){
         try {
             URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -84,6 +84,7 @@ public class Global {
             String inputLine = in.readLine();
             in.close();
 
+            if(inputLine == null) return new Response("", Status.ERROR);
             return new Response(inputLine);
         } catch(Exception e){
             return new Response(e.getMessage(), Status.ERROR);
