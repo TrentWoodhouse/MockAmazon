@@ -51,7 +51,6 @@ public class BuyerController {
 			}
 		}
 
-		buyer.id = buyers.size()+1;
 		buyers.add(buyer);
 
 		//attempt to add the new Json to a file

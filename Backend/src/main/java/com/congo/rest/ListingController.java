@@ -18,7 +18,7 @@ public class ListingController {
 	private File listingFile = new File("./storage/listings.txt");
 
 	@GetMapping("/listing")
-	public Listing getListing(@RequestParam(value = "id", defaultValue = "") String id) {
+	public ArrayList<Listing> getListing(@RequestParam Map<String, String> input) {
 
 		if (listings == null) {
 			if (listingFile.exists()) {
@@ -28,14 +28,15 @@ public class ListingController {
 			}
 		}
 
+		ArrayList<Listing> listingList = new ArrayList<Listing>();
 		//find the specified listing (or all)
 		for(Listing l : listings){
-			if(l.id == Long.parseLong(id)){
-				return l;
+			if((input.containsKey("id") && l.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && l.name.equals(input.get("name")))){
+				listingList.add(l);
 			}
 		}
 
-		return null;
+		return listingList;
 	}
 
 	@PostMapping("/listing")

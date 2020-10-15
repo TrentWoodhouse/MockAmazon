@@ -79,9 +79,19 @@ public class Main {
 
                     if(role.equals("buyer") || role.equals("seller")) {
 
-                        inputLine = Global.sendPost("/user", new Gson().toJson(tmp).toString()).getMessage();
+                        try {
+                            inputLine = Global.sendPost("/user", new Gson().toJson(tmp).toString()).getMessage();
 
-                        inputLine = Global.sendPost("/"+role, new Gson().toJson(tmp).toString()).getMessage();
+                            inputLine = Global.sendGet("/user?name=" + name).getMessage();
+                            JSONObject json = new JSONObject(inputLine);
+                            long id = json.getLong("id");
+                            tmp.id = id;
+
+                            inputLine = Global.sendPost("/" + role, new Gson().toJson(tmp).toString()).getMessage();
+
+                        } catch(Exception e){
+                            continue;
+                        }
 
                         if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller")) {
                             Global.io.print("Successfully Created Your Account!");

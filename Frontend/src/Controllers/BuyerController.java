@@ -5,6 +5,8 @@ import Entities.Response;
 import Enums.Status;
 import Utils.Global;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -79,14 +81,14 @@ public class BuyerController extends Controller {
 
         //find the user mentioned
         try {
-            String in = Global.sendGet("http://localhost:8080/seller" + "?name=" + receiver);
+            Response in = Global.sendGet("/seller?name=" + receiver);
             int val = 0;
-            if (in == null || !in.equals("")) {
-                val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
+            if (!(in.getStatus() == Status.ERROR)) {
+                val = Integer.parseInt(String.valueOf(new JSONObject(in.getMessage()).get("id")));
             } else {
-                in = Global.sendGet("http://localhost:8080/buyer" + "?name=" + receiver);
-                if (in == null || !in.equals("")) {
-                    val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
+                in = Global.sendGet("/buyer?name=" + receiver);
+                if (!(in.getStatus() == Status.ERROR)) {
+                    val = Integer.parseInt(String.valueOf(new JSONObject(in.getMessage()).get("id")));
                 } else {
                     return new Response("Message Failed to Send (Recipient doesn't exist)");
                 }
@@ -94,22 +96,48 @@ public class BuyerController extends Controller {
             m.receiver = val;
             System.out.println("Val=" + val);
         } catch (Exception e){
-            System.out.println(e);
+            return new Response("Message Failed to Send");
         }
 
         m.message = message;
         m.timeSent = new Date().toString();
-        System.out.println(new Gson().toJson(m));
 
-        String inputLine = Global.sendPost("http://localhost:8080/message", new Gson().toJson(m).toString());
+        Response inputLine = Global.sendPost("/message", new Gson().toJson(m));
 
-        if(inputLine.equals("")){
+        if(inputLine.getStatus() == Status.ERROR){
             return new Response("Message Failed to Send");
         }
 
         return new Response("Message Successfully Sent");
     }
     public Response viewMessages(){
+
+        Response inputLine = Global.sendGet("/message?id="+Global.currUser.id);
+        System.out.println(inputLine.getMessage());
+        JSONArray jsonArray;
+        JsonParser jsonParser;
+        try {
+            jsonArray = new JSONArray(inputLine.getMessage());
+
+            for(int i=0 ; i<jsonArray.length() ; i++){
+                JSONObject m = jsonArray.getJSONObject(i);
+
+                String sender = new JSONObject(Global.sendGet("/user?id=" + m.get("sender")).getMessage()).getString("name");
+                String receiver = new JSONObject(Global.sendGet("/user?id=" + m.get("receiver")).getMessage()).getString("name");
+
+                System.out.println("-------------------------------------------------------");
+                System.out.println("Time Sent: " + m.get("timeSent"));
+                System.out.println("Sender:    " + sender);
+                System.out.println("Receiver:  " + receiver);
+                System.out.println("");
+                System.out.println("Message:   " + m.get("message"));
+                System.out.println("-------------------------------------------------------");
+            }
+
+        } catch (Exception e){
+            System.out.println(e);
+            return new Response("Failed to Load Messages");
+        }
 
         return new Response(" - End of Messages - ");
     }

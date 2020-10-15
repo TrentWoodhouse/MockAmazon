@@ -85,6 +85,7 @@ public class Global {
 
             return new Response(inputLine);
         } catch(Exception e){
+            System.out.println("Error: "+e);
             return new Response(e.getMessage(), Status.ERROR);
         }
     }
