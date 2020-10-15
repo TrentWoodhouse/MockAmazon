@@ -1,6 +1,8 @@
 package Utils;
 
 import Classes.User;
+import Entities.Response;
+import Enums.Status;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -13,10 +15,10 @@ public class Global {
     public static IO io = new IO();
     public static Router router = new Router();
     public static User currUser;
-
-    public static String sendPost(String urlString, String json){
+    public static String apiHost = "http://localhost:8080";
+    public static Response sendPost(String route, String json){
         try {
-            URL url = new URL(urlString);
+            URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
@@ -29,7 +31,7 @@ public class Global {
                 OutputStream os = connection.getOutputStream();
                 os.write(out);
             } catch (Exception e) {
-                return "";
+                return new Response(e.getMessage(), Status.ERROR);
             }
 
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -37,24 +39,24 @@ public class Global {
             //System.out.println(inputLine);
             in.close();
 
-            return inputLine;
+            return new Response(inputLine);
         } catch(Exception e){
-            return "";
+            return new Response(e.getMessage(), Status.ERROR);
         }
     }
 
-    public static String sendGet(String urlString){
+    public static Response sendGet(String route){
         try {
-            URL url = new URL(urlString);
+            URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");     //insecure, I know
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String inputLine = in.readLine();
             in.close();
 
-            return inputLine;
+            return new Response(inputLine);
         } catch(Exception e){
-            return "";
+            return new Response(e.getMessage(), Status.ERROR);
         }
     }
 }

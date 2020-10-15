@@ -68,9 +68,9 @@ public class Main {
 
                     if(role.equals("buyer") || role.equals("seller")) {
 
-                        inputLine = Global.sendPost("http://localhost:8080/user", new Gson().toJson(tmp).toString());
+                        inputLine = Global.sendPost("/user", new Gson().toJson(tmp).toString()).getMessage();
 
-                        inputLine = Global.sendPost("http://localhost:8080/"+role, new Gson().toJson(tmp).toString());
+                        inputLine = Global.sendPost("/"+role, new Gson().toJson(tmp).toString()).getMessage();
 
                         if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller")) {
                             Global.io.print("Successfully Created Your Account!");
@@ -94,7 +94,7 @@ public class Main {
 
                     //Add an HTTP connection
                     try {
-                        String inputLine = Global.sendGet("http://localhost:8080/"+ response +"?name=" + name);
+                        String inputLine = Global.sendGet("/"+ response +"?name=" + name).getMessage();
 
                         //create a json object, and verify the password
                         JSONObject json = new JSONObject(inputLine);

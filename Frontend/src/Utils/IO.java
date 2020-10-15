@@ -51,16 +51,24 @@ public class IO {
     }
 
     public String question(String qstn) {
+        return question(qstn, "");
+    }
+
+    public String question(String qstn, String def) {
         System.out.println(qstn);
         String str = in.nextLine();
-        lastResponse = str;
+        lastResponse = (str.equals("") ? def : str);
         return str;
     }
 
     public String inlineQuestion(String qstn) {
+        return inlineQuestion(qstn, "");
+    }
+
+    public String inlineQuestion(String qstn, String def) {
         System.out.print(qstn + " ");
         String str = in.nextLine();
-        lastResponse = str;
+        lastResponse = (str.equals("") ? def : str);
         return str;
     }
 

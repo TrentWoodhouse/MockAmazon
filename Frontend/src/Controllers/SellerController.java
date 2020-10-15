@@ -40,7 +40,7 @@ public class SellerController extends Controller {
     @Override
     public Response menu() {
         Global.io.print("showListings:\t\t\tshows all your posted listings\n" +
-                "createListing:\t\t\tcreate a new listing]n" +
+                "createListing:\t\t\tcreate a new listing]\n" +
                 "editListing [id]:\t\tedit listing with the given id");
         return super.menu();
     }
@@ -61,33 +61,32 @@ public class SellerController extends Controller {
             listing.put("seller", Global.currUser.id);
             String jsonString = listing.toString();
 
-            URL url = new URL("http://localhost:8080/listing");
-            HttpURLConnection con = (HttpURLConnection)url.openConnection();
-            con.setRequestMethod("POST");
-            con.setRequestProperty("Content-Type", "application/json; utf-8");
-            con.setRequestProperty("Accept", "application/json");
-            con.setDoOutput(true);
-            try(OutputStream os = con.getOutputStream()) {
-                byte[] input = jsonString.getBytes("utf-8");
-                os.write(input, 0, input.length);
-            }
-            try(BufferedReader br = new BufferedReader(new InputStreamReader(con.getInputStream(), "utf-8"))) {
-                StringBuilder response = new StringBuilder();
-                String responseLine = null;
-                while ((responseLine = br.readLine()) != null) {
-                    response.append(responseLine.trim());
-                }
-                return new Response(response.toString());
-            }
+            return Global.sendPost("/listing", jsonString);
         }
         catch(Exception e) {
             return new Response("The listing was not created successfully", Status.ERROR);
         }
-
     }
 
     public Response editListing(int id) {
-        //TODO
-        return new Response("Listing " + id + " successfully edited");
+        try {
+            JSONObject listing = new JSONObject(Global.sendGet("/listing?id=" + id).getMessage());
+            String name = listing.getString("name");
+            String fullDescription = listing.getString("description");
+            String description = fullDescription.substring(0, Math.min(fullDescription.length(), 30)) + "...";
+            String costVal = Double.toString(listing.getDouble("cost"));
+            String cost = "$" + costVal;
+
+            Global.io.print("Edit listing:");
+            listing.put("name", Global.io.inlineQuestion("Name [" + name + "]:", name));
+            listing.put("description", Global.io.inlineQuestion("Description [" + description + "]:", fullDescription));
+            listing.put("cost", Global.io.inlineQuestion("Cost [" + cost + "]:", costVal));
+            String jsonString = listing.toString();
+
+            return Global.sendPost("/listing", jsonString); //TODO update listing properly
+        }
+        catch(Exception e) {
+            return new Response("The listing was not created successfully", Status.ERROR);
+        }
     }
 }
