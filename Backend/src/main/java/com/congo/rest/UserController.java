@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.Map;
 
 @RestController
 public class UserController {
@@ -17,7 +18,7 @@ public class UserController {
 	private File userFile = new File("./storage/users.txt");
 
 	@GetMapping("/user")
-	public User getUser(@RequestParam(value = "id", defaultValue = "") String id) {
+	public User getUser(@RequestParam Map<String, String> input) {
 
 		if (users == null) {
 			if (userFile.exists()) {
@@ -29,7 +30,7 @@ public class UserController {
 
 		//find the specified user (or all)
 		for(User u : users){
-			if(u.id == Long.parseLong(id)){
+			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
 				return u;
 			}
 		}

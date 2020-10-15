@@ -35,7 +35,7 @@ public class Main {
 
                     //Add an HTTP connection
                     try {
-                        URL url = new URL("http://localhost:8080/user?id=1");//+name);
+                        URL url = new URL("http://localhost:8080/user?name="+name);
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                         connection.setRequestMethod("GET");     //insecure, I know
                         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -52,6 +52,7 @@ public class Main {
                         }
 
                     } catch(Exception e){
+                        //System.out.println(e);
                         Global.io.error("Incorrect Username");
                     }
                 }
