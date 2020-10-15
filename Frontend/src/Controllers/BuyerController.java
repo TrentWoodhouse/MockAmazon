@@ -23,14 +23,14 @@ public class BuyerController extends Controller {
     @Override
     public Response execute(String command) {
         String[] exArr = command.trim().split("\\s+");
-        //try {
-            switch(command/*exArr[0].toLowerCase()*/) {
+        try {
+            switch(exArr[0].toLowerCase()) {
                 case "menu":
                     return menu();
                 case "givefeedback":
                     return giveFeedback();
-                case "sendmessage":
-                    return sendMessage();
+//                case "sendmessage":
+//                    return sendMessage();
                 case "viewmessages":
                     return viewMessages();
                 case "search":
@@ -42,13 +42,13 @@ public class BuyerController extends Controller {
                 default:
                     return super.execute(command);
             }
-        /*}
+        }
         catch (IndexOutOfBoundsException e) {
             return new Response("Missing parameter " + e.getMessage() + " for command \"" + exArr[0] + "\"", Status.ERROR);
         }
         catch (Exception e) {
             return new Response(e.getMessage(), Status.ERROR);
-        }*/
+        }
     }
 
     @Override
@@ -67,78 +67,102 @@ public class BuyerController extends Controller {
         return new Response("You have given feedback. Thanks!");
     }
 
-    public Response sendMessage() {
+//    public Response sendMessage() {
+//
+//        String receiver = Global.io.inlineQuestion("Receiver: ");
+//        String message = Global.io.inlineQuestion("Message: ");
+//
+//        //make a message based on input (if possible)
+//        Message m = new Message();
+//        m.id = 0;
+//        m.sender = Integer.parseInt(String.valueOf(Global.currUser.id));
+//
+//        //find the user mentioned
+//        try {
+//            String in = Global.sendGet("http://localhost:8080/seller" + "?name=" + receiver);
+//            int val = 0;
+//            if (in == null || !in.equals("")) {
+//                val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
+//            } else {
+//                in = Global.sendGet("http://localhost:8080/buyer" + "?name=" + receiver);
+//                if (in == null || !in.equals("")) {
+//                    val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
+//                } else {
+//                    return new Response("Message Failed to Send (Recipient doesn't exist)");
+//                }
+//            }
+//            m.receiver = val;
+//            System.out.println("Val=" + val);
+//        } catch (Exception e){
+//            System.out.println(e);
+//        }
+//
+//        m.message = message;
+//        m.timeSent = new Date().toString();
+//        System.out.println(new Gson().toJson(m));
+//
+//        String inputLine = Global.sendPost("http://localhost:8080/message", new Gson().toJson(m).toString());
+//
+//        if(inputLine.equals("")){
+//            return new Response("Message Failed to Send");
+//        }
+//
+//        return new Response("Message Successfully Sent");
+//    }
 
-        String receiver = Global.io.inlineQuestion("Receiver: ");
-        String message = Global.io.inlineQuestion("Message: ");
-
-        //make a message based on input (if possible)
-        Message m = new Message();
-        m.id = 0;
-        m.sender = Integer.parseInt(String.valueOf(Global.currUser.id));
-
-        //find the user mentioned
-        try {
-            String in = Global.sendGet("http://localhost:8080/seller" + "?name=" + receiver);
-            int val = 0;
-            if (in == null || !in.equals("")) {
-                val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
-            } else {
-                in = Global.sendGet("http://localhost:8080/buyer" + "?name=" + receiver);
-                if (in == null || !in.equals("")) {
-                    val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
-                } else {
-                    return new Response("Message Failed to Send (Recipient doesn't exist)");
-                }
-            }
-            m.receiver = val;
-            System.out.println("Val=" + val);
-        } catch (Exception e){
-            System.out.println(e);
-        }
-
-        m.message = message;
-        m.timeSent = new Date().toString();
-        System.out.println(new Gson().toJson(m));
-
-        String inputLine = Global.sendPost("http://localhost:8080/message", new Gson().toJson(m).toString());
-
-        if(inputLine.equals("")){
-            return new Response("Message Failed to Send");
-        }
-
-        return new Response("Message Successfully Sent");
-    }
     public Response viewMessages(){
 
         return new Response(" - End of Messages - ");
     }
 
+    public ArrayList<JSONObject> search(ArrayList<JSONObject> listings, String term) {
+        ArrayList<JSONObject> results = new ArrayList<>();
+
+        return results;
+    }
+
     public Response searchProducts() {
-        // TODO
-        Global.io.print("Enter a search term or type advancedSearch");
-        String term = Global.io.inlineQuestion("");
+        // TODO if buyer wants to add an item to cart, simply pass item id to addToCart()
+        Global.io.print("Enter a search term or type \"advancedSearch\"");
+        String term = Global.io.inlineQuestion("$");
         ArrayList<JSONObject> listings = new ArrayList<>();
+        ArrayList<JSONObject> results = new ArrayList<>();
+        try {
+
+        } catch(Exception e) {
+            return new Response("The search was unsuccessful", Status.ERROR);
+        }
 
         if (term.toLowerCase() == "advancedsearch") {
+            Global.io.print("Enter one of the following: \"Price less than x\", \"Price greater than x\", or \"Rating greater than x\"");
+            String advanced = Global.io.inlineQuestion("$");
+            Global.io.print("Now enter a search term");
+            term = Global.io.inlineQuestion("$");
+            ArrayList<JSONObject> validListings = new ArrayList<>();
+            switch(advanced.toLowerCase()) {
+                case "price less than x":
+                    // get all listings w/ price lower than x
+                    BigDecimal.valueOf()
+                    results = search(validListings, term);
+                case "price greater than x":
 
-        } else {
-            try {
-                long id = 1;
-                System.out.println((Global.sendGet("/listing").getMessage()));
-            } catch(Exception e) {
-                return new Response("The search was unsuccessful", Status.ERROR);
+                case "rating greater than x":
+
             }
+        } else {
+            results = search(listings, term);
         }
-        return new Response("Found %d products that fit the criteria");
+        return new Response("Found " + results.size() + " products that fit the criteria");
     }
 
     public Response viewCart() {
-        // TODO
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             JSONArray cart = user.getJSONArray("cart");
+            ArrayList<Integer> cartInt = new ArrayList<>();
+            JSONArray orders = user.getJSONArray("orders");
 
+            // checks contents of the cart and displays items and prices, as well as total price
             Global.io.print("Cart\n----------");
             float total = 0;
             if(cart.length() == 0) {
@@ -146,20 +170,47 @@ public class BuyerController extends Controller {
             } else {
                 for (int i = 1; i <= cart.length(); i++) {
                     JSONObject listing = new JSONObject(Global.sendGet("/listing?id=" + cart.getInt(i-1)).getMessage());
-                    Global.io.print("Item " + i + ": " + listing.getString("name") + ", " + listing.get("cost"));
+                    cartInt.add(cart.getInt(i-1));
+                    Global.io.print("Item " + i + ": " + listing.getString("name") + ", $" + listing.get("cost"));
                     total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
                 }
             }
-            Global.io.print("----------\nTotal: " + total);
+            Global.io.print("----------\nTotal: $" + total + "\n");
+            Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
+            String answer = Global.io.inlineQuestion("$");
+
+            // add to orders for buyer and listings if purchased
+            if (answer.toLowerCase().equals("purchase")) {
+                for (int i = 0; i < cartInt.size(); i++) {
+                    // TODO Update Orders for buyer and listings
+                }
+            }
         } catch(Exception e) {
-            return new Response("The cart query failed", Status.ERROR);
+            return new Response("The view cart query failed", Status.ERROR);
         }
-        return new Response("");
+        return new Response("Left cart...");
     }
 
     public Response addToCart(int id) {
         // TODO
-        return new Response("Added");
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray cart = user.getJSONArray("cart");
+
+            // recreates the cart as an ArrayList of Integers
+            ArrayList<Integer> newCart = new ArrayList<>();
+            for (int i = 0; i < cart.length(); i++) {
+                newCart.add(cart.getInt(i));
+            }
+            newCart.add(id);
+
+            user.remove("cart");
+            user.put("cart", newCart);
+            // TODO Replace the old cart w/ the new
+        } catch(Exception e) {
+            return new Response("The add to cart query failed", Status.ERROR);
+        }
+        return new Response("R U HERE");
     }
 }
 

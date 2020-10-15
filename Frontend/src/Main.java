@@ -65,17 +65,13 @@ public class Main {
 
                     User tmp;
                     if (role.equals("buyer")) {
-                        tmp = new Buyer(new ArrayList<Integer>());
-                        tmp.id = 4;
-                        tmp.name = name;
-                        tmp.password = password;
+                        tmp = new Buyer(new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>());
                     } else {
                         tmp = new User();
-                        tmp.id = 4;
-                        tmp.name = name;
-                        tmp.password = password;
                     }
-
+                    tmp.id = 4;
+                    tmp.name = name;
+                    tmp.password = password;
 
                     if(role.equals("buyer") || role.equals("seller")) {
 

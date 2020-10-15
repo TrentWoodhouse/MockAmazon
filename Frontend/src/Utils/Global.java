@@ -74,7 +74,7 @@ public class Global {
         }
     }
 
-        public static Response sendGet(String route){
+    public static Response sendGet(String route){
         try {
             URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
