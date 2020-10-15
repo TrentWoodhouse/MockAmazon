@@ -32,8 +32,6 @@ public class BuyerController extends Controller {
                     return searchProducts();
                 case "viewcart":
                     return viewCart();
-                case "addtocart":
-                    return addToCart(Integer.parseInt(exArr[1]));
                 default:
                     return super.execute(command);
             }
@@ -53,7 +51,6 @@ public class BuyerController extends Controller {
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
         Global.io.print("search:\t\t\t\tsearch available product listings");
         Global.io.print("viewCart:\t\t\tview all items in your cart");
-        Global.io.print("addToCart [id]:\t\t\tadd an item to your cart");
         return super.menu();
     }
 
@@ -135,46 +132,87 @@ public class BuyerController extends Controller {
         return new Response(" - End of Messages - ");
     }
 
-    public ArrayList<JSONObject> search(ArrayList<JSONObject> listings, String term) {
-        ArrayList<JSONObject> results = new ArrayList<>();
-
-        return results;
-    }
-
-    public Response searchProducts() {
-        // TODO if buyer wants to add an item to cart, simply pass item id to addToCart()
-        Global.io.print("Enter a search term or type \"advancedSearch\"");
-        String term = Global.io.inlineQuestion("$");
-        ArrayList<JSONObject> listings = new ArrayList<>();
+    /**
+     * Helper function to search the JSONArray for matches
+     * @param listings
+     * @param term
+     * @return
+     */
+    public ArrayList<JSONObject> search(JSONArray listings, String term) {
         ArrayList<JSONObject> results = new ArrayList<>();
         try {
-
+            for (int i = 0; i < listings.length(); i++) {
+                JSONObject temp = listings.getJSONObject(i);
+                if (temp.getString("name").toLowerCase().contains(term) || temp.getString("description").toLowerCase().contains(term)) {
+                    results.add(listings.getJSONObject(i));
+                }
+            }
+            return results;
         } catch(Exception e) {
-            return new Response("The search was unsuccessful", Status.ERROR);
+            return null;
         }
+    }
 
-        if (term.toLowerCase() == "advancedsearch") {
-            Global.io.print("Enter one of the following: \"Price less than x\", \"Price greater than x\", or \"Rating greater than x\"");
+    /**
+     * Function to search for products based on certain criteria
+     * @return
+     */
+    public Response searchProducts() {
+        Global.io.print("Enter a search term or type \"advancedSearch\"");
+        String term = Global.io.inlineQuestion("$").toLowerCase();
+        JSONArray listings;
+        ArrayList<JSONObject> results = new ArrayList<>();
+        try {
+            listings = new JSONArray(Global.sendGet("/listing?all=xyz").getMessage());
+
+        if (term.equalsIgnoreCase("advancedsearch")) {
+            Global.io.print("Enter one of the following: \"Price less than x\" or \"Price greater than x\"");
             String advanced = Global.io.inlineQuestion("$");
+            Global.io.print("Now enter your x (what the prices should be less than or greater than)");
+            String criteria = Global.io.inlineQuestion("$");
             Global.io.print("Now enter a search term");
             term = Global.io.inlineQuestion("$");
-            ArrayList<JSONObject> validListings = new ArrayList<>();
-            switch(advanced.toLowerCase()) {
-                case "price less than x":
-                    // get all listings w/ price lower than x
-                    //BigDecimal.valueOf()
-                    results = search(validListings, term);
-                case "price greater than x":
-
-                case "rating greater than x":
-
+            JSONArray validListings = new JSONArray();
+            if (advanced.equalsIgnoreCase("price less than x")) {
+                // get all listings w/ price lower than x
+                for (int i = 0; i < listings.length(); i++) {
+                    if (BigDecimal.valueOf(listings.getJSONObject(i).getDouble("cost")).floatValue() <= Float.parseFloat(criteria)) {
+                           validListings.put(listings.getJSONObject(i));
+                    }
+                }
+            } else {
+                for (int i = 0; i < listings.length(); i++) {
+                    if (BigDecimal.valueOf(listings.getJSONObject(i).getDouble("cost")).floatValue() >= Float.parseFloat(criteria)) {
+                        validListings.put(listings.getJSONObject(i));
+                    }
+                }
             }
+
+            results = search(validListings, term);
         } else {
             results = search(listings, term);
         }
-        return new Response("Found " + results.size() + " products that fit the criteria");
+        for (int i = 1; i<=results.size(); i++) {
+            Global.io.print("Item " + i + ": " + results.get(i-1).getString("name") + ", Description: " + results.get(i-1).getString("description") + ", Cost: " + results.get(i-1).get("cost"));
+        }
+        Global.io.print("Found " + results.size() + " products that fit the criteria");
+        Global.io.print("Would you like to add one of these products to the cart? (y/n)");
+        String response = Global.io.inlineQuestion("$");
+        if (response.equalsIgnoreCase("y")) {
+            Global.io.print("Which one? Enter the number");
+            String number = Global.io.inlineQuestion("$");
+            addToCart(results.get(Integer.parseInt(number)).getInt("id"));
+        }
+        return new Response("");
+        } catch(Exception e) {
+            return new Response("The search was unsuccessful", Status.ERROR);
+        }
     }
 
+    /**
+     * displays what is currently in the cart
+     * @return
+     */
     public Response viewCart() {
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
@@ -202,7 +240,7 @@ public class BuyerController extends Controller {
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
                 for (int i = 0; i < cartInt.size(); i++) {
-                    // TODO Update Orders for buyer and listings
+
                 }
             }
         } catch(Exception e) {
@@ -211,8 +249,13 @@ public class BuyerController extends Controller {
         return new Response("Left cart...");
     }
 
+    /**
+     * adds an item to the users cart
+     *  Implemented by the search function so as to avoid confusion with the listing id's
+     * @param id
+     * @return
+     */
     public Response addToCart(int id) {
-        // TODO
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             JSONArray cart = user.getJSONArray("cart");
@@ -226,10 +269,10 @@ public class BuyerController extends Controller {
 
             user.remove("cart");
             user.put("cart", newCart);
-            // TODO Replace the old cart w/ the new
+            Global.sendPatch("/buyer?name=" +Global.currUser.name, user.toString());
         } catch(Exception e) {
             return new Response("The add to cart query failed", Status.ERROR);
         }
-        return new Response("R U HERE");
+        return new Response("");
     }
 }
