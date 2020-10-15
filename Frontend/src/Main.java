@@ -4,6 +4,7 @@ import Entities.Response;
 import Enums.UserType;
 import Utils.*;
 import Controllers.*;
+import Utils.Global;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -67,9 +68,9 @@ public class Main {
 
                     if(role.equals("buyer") || role.equals("seller")) {
 
-                        inputLine = sendPost("http://localhost:8080/user", new Gson().toJson(tmp).toString());
+                        inputLine = Global.sendPost("http://localhost:8080/user", new Gson().toJson(tmp).toString());
 
-                        inputLine = sendPost("http://localhost:8080/"+role, new Gson().toJson(tmp).toString());
+                        inputLine = Global.sendPost("http://localhost:8080/"+role, new Gson().toJson(tmp).toString());
 
                         if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller")) {
                             Global.io.print("Successfully Created Your Account!");
@@ -93,7 +94,7 @@ public class Main {
 
                     //Add an HTTP connection
                     try {
-                        String inputLine = sendGet("http://localhost:8080/"+ response +"?name=" + name);
+                        String inputLine = Global.sendGet("http://localhost:8080/"+ response +"?name=" + name);
 
                         //create a json object, and verify the password
                         JSONObject json = new JSONObject(inputLine);
@@ -145,50 +146,6 @@ public class Main {
                 default:
                     Global.io.error(response.getMessage());
             }
-        }
-    }
-
-    public static String sendPost(String urlString, String json){
-        try {
-            URL url = new URL(urlString);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-
-            byte[] out = json.getBytes(StandardCharsets.UTF_8);
-            connection.setFixedLengthStreamingMode(out.length);
-            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            connection.connect();
-            try {
-                OutputStream os = connection.getOutputStream();
-                os.write(out);
-            } catch (Exception e) {
-                return "";
-            }
-
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String inputLine = in.readLine();
-            //System.out.println(inputLine);
-            in.close();
-
-            return inputLine;
-        } catch(Exception e){
-            return "";
-        }
-    }
-
-    public static String sendGet(String urlString){
-        try {
-            URL url = new URL(urlString);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");     //insecure, I know
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            String inputLine = in.readLine();
-            in.close();
-
-            return inputLine;
-        } catch(Exception e){
-            return "";
         }
     }
 }
