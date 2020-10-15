@@ -45,11 +45,12 @@ public class Global {
         }
     }
 
-    public static String sendPatch(String urlString, String json){
+    public static Response sendPatch(String route, String json){
         try {
-            URL url = new URL(urlString);
+            URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("PATCH");
+            connection.setRequestProperty("X-HTTP-Method-Override", "PATCH");
+            connection.setRequestMethod("POST");
             connection.setDoOutput(true);
 
             byte[] out = json.getBytes(StandardCharsets.UTF_8);
@@ -60,7 +61,7 @@ public class Global {
                 OutputStream os = connection.getOutputStream();
                 os.write(out);
             } catch (Exception e) {
-                return "";
+                return new Response(e.getMessage(), Status.ERROR);
             }
 
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -68,9 +69,9 @@ public class Global {
             //System.out.println(inputLine);
             in.close();
 
-            return inputLine;
+            return new Response(inputLine);
         } catch(Exception e){
-            return "";
+            return new Response(e.getMessage(), Status.ERROR);
         }
     }
 

@@ -58,7 +58,7 @@ public class IO {
         System.out.println(qstn);
         String str = in.nextLine();
         lastResponse = (str.equals("") ? def : str);
-        return str;
+        return lastResponse;
     }
 
     public String inlineQuestion(String qstn) {
@@ -69,7 +69,7 @@ public class IO {
         System.out.print(qstn + " ");
         String str = in.nextLine();
         lastResponse = (str.equals("") ? def : str);
-        return str;
+        return lastResponse;
     }
 
     public String getLastResponse() {

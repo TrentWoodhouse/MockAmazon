@@ -63,16 +63,16 @@ public class BuyerController extends Controller {
 
         //find the user mentioned
         try {
-            String in = Global.sendGet("http://localhost:8080/seller" + "?name=" + receiver);
+            String in = Global.sendGet("/seller" + "?name=" + receiver).getMessage();
             int val = 0;
             if (in == null || !in.equals("")) {
                 val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
             } else {
-                in = Global.sendGet("http://localhost:8080/buyer" + "?name=" + receiver);
+                in = Global.sendGet("/buyer" + "?name=" + receiver).getMessage();
                 if (in == null || !in.equals("")) {
                     val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
                 } else {
-                    return new Response("Message Failed to Send (Recipient doesn't exist)");
+                    return new Response("Message Failed to Send (Recipient doesn't exist)", Status.ERROR);
                 }
             }
             m.receiver = val;
@@ -85,7 +85,7 @@ public class BuyerController extends Controller {
         m.timeSent = new Date().toString();
         System.out.println(new Gson().toJson(m));
 
-        String inputLine = Global.sendPost("http://localhost:8080/message", new Gson().toJson(m).toString());
+        String inputLine = Global.sendPost("/message", new Gson().toJson(m).toString()).getMessage();
 
         if(inputLine.equals("")){
             return new Response("Message Failed to Send");

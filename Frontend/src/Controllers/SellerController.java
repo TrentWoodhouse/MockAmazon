@@ -40,7 +40,7 @@ public class SellerController extends Controller {
     @Override
     public Response menu() {
         Global.io.print("showListings:\t\t\tshows all your posted listings\n" +
-                "createListing:\t\t\tcreate a new listing]\n" +
+                "createListing:\t\t\tcreate a new listing\n" +
                 "editListing [id]:\t\tedit listing with the given id");
         return super.menu();
     }
@@ -83,10 +83,10 @@ public class SellerController extends Controller {
             listing.put("cost", Global.io.inlineQuestion("Cost [" + cost + "]:", costVal));
             String jsonString = listing.toString();
 
-            return Global.sendPost("/listing", jsonString); //TODO update listing properly
+            return Global.sendPatch("/listing", jsonString);
         }
         catch(Exception e) {
-            return new Response("The listing was not created successfully", Status.ERROR);
+            return new Response("The listing cannot be edited", Status.ERROR);
         }
     }
 }
