@@ -88,4 +88,56 @@ public class BuyerController {
 			System.out.println(e);
 		}
 	}
+
+	@PatchMapping("/buyer")
+	public String updateBuyer(@RequestBody Buyer buyer) {
+
+		if (buyers == null) {
+			scanJsonFile();
+		}
+		if(buyers != null) {
+			for (int i=0 ; i<buyers.size() ; i++) {
+				Buyer u = buyers.get(i);
+				if (u.id == buyer.id || u.name.equals(buyer.name)) {
+					buyers.set(i, buyer);
+					return "Succeeded In Updating Buyer";
+				}
+			}
+		}
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!buyerFile.exists()) buyerFile.createNewFile();
+			FileWriter writer = new FileWriter(buyerFile);
+			writer.write(new Gson().toJson(buyers));
+			writer.close();
+
+			return "Successfully Sent Buyer";
+		} catch (Exception e){
+			System.out.println(e);
+		}
+
+		return "Failed to Update Buyer";
+	}
+
+	@DeleteMapping("/buyer")
+	public Buyer deleteBuyer(@RequestParam Map<String, String> input) {
+
+		if (buyers == null) {
+			if (buyerFile.exists()) {
+				scanJsonFile();
+			} else {
+				return null;
+			}
+		}
+
+		//find the specified buyer (or all)
+		for(Buyer u : buyers){
+			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
+				buyers.remove(u);
+			}
+		}
+
+		return null;
+	}
 }

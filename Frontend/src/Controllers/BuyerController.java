@@ -1,21 +1,30 @@
 package Controllers;
 
+import Classes.Message;
 import Entities.Response;
 import Enums.Status;
 import Utils.Global;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Date;
+
 
 public class BuyerController extends Controller {
 
     @Override
     public Response execute(String command) {
         String[] exArr = command.trim().split("\\s+");
-        try {
-            switch(exArr[0].toLowerCase()) {
+        //try {
+            switch(command/*exArr[0].toLowerCase()*/) {
                 case "menu":
                     return menu();
                 case "givefeedback":
@@ -33,13 +42,13 @@ public class BuyerController extends Controller {
                 default:
                     return super.execute(command);
             }
-        }
+        /*}
         catch (IndexOutOfBoundsException e) {
             return new Response("Missing parameter " + e.getMessage() + " for command \"" + exArr[0] + "\"", Status.ERROR);
         }
         catch (Exception e) {
             return new Response(e.getMessage(), Status.ERROR);
-        }
+        }*/
     }
 
     @Override
@@ -58,7 +67,45 @@ public class BuyerController extends Controller {
         return new Response("You have given feedback. Thanks!");
     }
 
-    public Response sendMessage(){
+    public Response sendMessage() {
+
+        String receiver = Global.io.inlineQuestion("Receiver: ");
+        String message = Global.io.inlineQuestion("Message: ");
+
+        //make a message based on input (if possible)
+        Message m = new Message();
+        m.id = 0;
+        m.sender = Integer.parseInt(String.valueOf(Global.currUser.id));
+
+        //find the user mentioned
+        try {
+            String in = Global.sendGet("http://localhost:8080/seller" + "?name=" + receiver);
+            int val = 0;
+            if (in == null || !in.equals("")) {
+                val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
+            } else {
+                in = Global.sendGet("http://localhost:8080/buyer" + "?name=" + receiver);
+                if (in == null || !in.equals("")) {
+                    val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
+                } else {
+                    return new Response("Message Failed to Send (Recipient doesn't exist)");
+                }
+            }
+            m.receiver = val;
+            System.out.println("Val=" + val);
+        } catch (Exception e){
+            System.out.println(e);
+        }
+
+        m.message = message;
+        m.timeSent = new Date().toString();
+        System.out.println(new Gson().toJson(m));
+
+        String inputLine = Global.sendPost("http://localhost:8080/message", new Gson().toJson(m).toString());
+
+        if(inputLine.equals("")){
+            return new Response("Message Failed to Send");
+        }
 
         return new Response("Message Successfully Sent");
     }
@@ -115,3 +162,5 @@ public class BuyerController extends Controller {
         return new Response("Added");
     }
 }
+
+

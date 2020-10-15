@@ -88,4 +88,56 @@ public class SellerController {
 			System.out.println(e);
 		}
 	}
+
+	@PatchMapping("/seller")
+	public String updateSeller(@RequestBody Seller seller) {
+
+		if (sellers == null) {
+			scanJsonFile();
+		}
+		if(sellers != null) {
+			for (int i=0 ; i<sellers.size() ; i++) {
+				Seller u = sellers.get(i);
+				if (u.id == seller.id || u.name.equals(seller.name)) {
+					sellers.set(i, seller);
+					return "Succeeded In Updating Seller";
+				}
+			}
+		}
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!sellerFile.exists()) sellerFile.createNewFile();
+			FileWriter writer = new FileWriter(sellerFile);
+			writer.write(new Gson().toJson(sellers));
+			writer.close();
+
+			return "Successfully Sent Seller";
+		} catch (Exception e){
+			System.out.println(e);
+		}
+
+		return "Failed to Update Seller";
+	}
+
+	@DeleteMapping("/seller")
+	public Seller deleteSeller(@RequestParam Map<String, String> input) {
+
+		if (sellers == null) {
+			if (sellerFile.exists()) {
+				scanJsonFile();
+			} else {
+				return null;
+			}
+		}
+
+		//find the specified seller (or all)
+		for(Seller u : sellers){
+			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
+				sellers.remove(u);
+			}
+		}
+
+		return null;
+	}
 }

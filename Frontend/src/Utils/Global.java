@@ -45,7 +45,36 @@ public class Global {
         }
     }
 
-    public static Response sendGet(String route){
+    public static String sendPatch(String urlString, String json){
+        try {
+            URL url = new URL(urlString);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("PATCH");
+            connection.setDoOutput(true);
+
+            byte[] out = json.getBytes(StandardCharsets.UTF_8);
+            connection.setFixedLengthStreamingMode(out.length);
+            connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            connection.connect();
+            try {
+                OutputStream os = connection.getOutputStream();
+                os.write(out);
+            } catch (Exception e) {
+                return "";
+            }
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine = in.readLine();
+            //System.out.println(inputLine);
+            in.close();
+
+            return inputLine;
+        } catch(Exception e){
+            return "";
+        }
+    }
+
+        public static Response sendGet(String route){
         try {
             URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();

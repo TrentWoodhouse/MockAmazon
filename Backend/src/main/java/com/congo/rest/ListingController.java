@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Scanner;
 
 @RestController
@@ -17,7 +18,7 @@ public class ListingController {
 	private File listingFile = new File("./storage/listings.txt");
 
 	@GetMapping("/listing")
-	public Listing getUser(@RequestParam(value = "id", defaultValue = "") String id) {
+	public Listing getListing(@RequestParam(value = "id", defaultValue = "") String id) {
 
 		if (listings == null) {
 			if (listingFile.exists()) {
@@ -38,7 +39,7 @@ public class ListingController {
 	}
 
 	@PostMapping("/listing")
-	public String postUser(@RequestBody Listing listing) {
+	public String postListing(@RequestBody Listing listing) {
 
 		if (listings == null) {
 			scanJsonFile();
@@ -86,5 +87,57 @@ public class ListingController {
 		} catch(FileNotFoundException e){
 			System.out.println(e);
 		}
+	}
+
+	@PatchMapping("/listing")
+	public String updateListing(@RequestBody Listing listing) {
+
+		if (listings == null) {
+			scanJsonFile();
+		}
+		if(listings != null) {
+			for (int i=0 ; i<listings.size() ; i++) {
+				Listing u = listings.get(i);
+				if (u.id == listing.id || u.name.equals(listing.name)) {
+					listings.set(i, listing);
+					return "Succeeded In Updating Listing";
+				}
+			}
+		}
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!listingFile.exists()) listingFile.createNewFile();
+			FileWriter writer = new FileWriter(listingFile);
+			writer.write(new Gson().toJson(listings));
+			writer.close();
+
+			return "Successfully Sent Listing";
+		} catch (Exception e){
+			System.out.println(e);
+		}
+
+		return "Failed to Update Listing";
+	}
+
+	@DeleteMapping("/listing")
+	public Listing deleteListing(@RequestParam Map<String, String> input) {
+
+		if (listings == null) {
+			if (listingFile.exists()) {
+				scanJsonFile();
+			} else {
+				return null;
+			}
+		}
+
+		//find the specified listing (or all)
+		for(Listing u : listings){
+			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
+				listings.remove(u);
+			}
+		}
+
+		return null;
 	}
 }

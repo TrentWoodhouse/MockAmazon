@@ -76,6 +76,7 @@ public class Main {
                         tmp.password = password;
                     }
 
+
                     if(role.equals("buyer") || role.equals("seller")) {
 
                         inputLine = Global.sendPost("/user", new Gson().toJson(tmp).toString()).getMessage();
@@ -100,8 +101,8 @@ public class Main {
                     }
                 }
                 if(userType != null){
-                    String name = Global.io.inlineQuestion(" Username: ");
-                    String pass = Global.io.inlineQuestion(" Password: ");
+                    String name = Global.io.inlineQuestion("Username: ");
+                    String pass = Global.io.inlineQuestion("Password: ");
 
                     //Add an HTTP connection
                     try {

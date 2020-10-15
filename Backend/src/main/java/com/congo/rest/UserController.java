@@ -88,4 +88,56 @@ public class UserController {
 			System.out.println(e);
 		}
 	}
+
+	@PatchMapping("/user")
+	public String updateUser(@RequestBody User user) {
+
+		if (users == null) {
+			scanJsonFile();
+		}
+		if(users != null) {
+			for (int i=0 ; i<users.size() ; i++) {
+				User u = users.get(i);
+				if (u.id == user.id || u.name.equals(user.name)) {
+					users.set(i, user);
+					return "Succeeded In Updating User";
+				}
+			}
+		}
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!userFile.exists()) userFile.createNewFile();
+			FileWriter writer = new FileWriter(userFile);
+			writer.write(new Gson().toJson(users));
+			writer.close();
+
+			return "Successfully Sent User";
+		} catch (Exception e){
+			System.out.println(e);
+		}
+
+		return "Failed to Update User";
+	}
+
+	@DeleteMapping("/user")
+	public User deleteUser(@RequestParam Map<String, String> input) {
+
+		if (users == null) {
+			if (userFile.exists()) {
+				scanJsonFile();
+			} else {
+				return null;
+			}
+		}
+
+		//find the specified user (or all)
+		for(User u : users){
+			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
+				users.remove(u);
+			}
+		}
+
+		return null;
+	}
 }

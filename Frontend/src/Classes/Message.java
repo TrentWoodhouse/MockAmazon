@@ -7,5 +7,5 @@ public class Message {
 	public int sender;
 	public int receiver;
 	public String message;
-	public Date timeSent;
+	public String timeSent;
 }

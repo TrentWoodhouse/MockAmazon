@@ -1,1 +1,5 @@
+<<<<<<< Updated upstream
 [{"id":1,"listings":[1]},{"id":5,"listings":[1]}]
+=======
+[{"id":1,"listings":[1,2]},{"id":2,"listings":[1,2]}]
+>>>>>>> Stashed changes
