@@ -9,6 +9,7 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
+import java.util.Map;
 
 @RestController
 public class SellerController {
@@ -17,7 +18,7 @@ public class SellerController {
 	private File sellerFile = new File("./storage/sellers.txt");
 
 	@GetMapping("/seller")
-	public Seller getUser(@RequestParam(value = "id", defaultValue = "") String id) {
+	public Seller getSeller(@RequestParam Map<String, String> input) {
 
 		if (sellers == null) {
 			if (sellerFile.exists()) {
@@ -28,9 +29,9 @@ public class SellerController {
 		}
 
 		//find the specified seller (or all)
-		for(Seller s : sellers){
-			if(s.id == Long.parseLong(id)){
-				return s;
+		for(Seller u : sellers){
+			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
+				return u;
 			}
 		}
 
@@ -38,18 +39,19 @@ public class SellerController {
 	}
 
 	@PostMapping("/seller")
-	public String postUser(@RequestBody Seller seller) {
+	public String postSeller(@RequestBody Seller seller) {
 
 		if (sellers == null) {
 			scanJsonFile();
 			if (sellers == null) sellers = new ArrayList<>();
 		}
-		for(Seller s : sellers) {
-			if (s.id == seller.id) {
+		for(Seller u : sellers) {
+			if (u.id == seller.id || u.name.equals(seller.name)) {
 				return "Failed to send Seller (incorrect ID)";
 			}
 		}
 
+		seller.id = sellers.size()+1;
 		sellers.add(seller);
 
 		//attempt to add the new Json to a file

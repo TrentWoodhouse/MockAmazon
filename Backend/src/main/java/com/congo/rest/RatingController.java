@@ -50,6 +50,7 @@ public class RatingController {
 			}
 		}
 
+		rating.id = ratings.size()+1;
 		ratings.add(rating);
 
 		//attempt to add the new Json to a file

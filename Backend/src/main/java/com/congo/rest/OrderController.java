@@ -50,6 +50,7 @@ public class OrderController {
 			}
 		}
 
+		order.id = orders.size()+1;
 		orders.add(order);
 
 		//attempt to add the new Json to a file

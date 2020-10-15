@@ -50,6 +50,7 @@ public class MessageController {
 			}
 		}
 
+		message.id = messages.size()+1;
 		messages.add(message);
 
 		//attempt to add the new Json to a file
