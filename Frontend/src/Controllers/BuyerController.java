@@ -3,6 +3,11 @@ package Controllers;
 import Entities.Response;
 import Enums.Status;
 import Utils.Global;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
 
 public class BuyerController extends Controller {
 
@@ -13,12 +18,18 @@ public class BuyerController extends Controller {
             switch(exArr[0].toLowerCase()) {
                 case "menu":
                     return menu();
-                case "giveFeedback":
+                case "givefeedback":
                     return giveFeedback();
-                case "sendMessage":
+                case "sendmessage":
                     return sendMessage();
-                case "viewMessages":
+                case "viewmessages":
                     return viewMessages();
+                case "search":
+                    return searchProducts();
+                case "viewcart":
+                    return viewCart();
+                case "addtocart":
+                    return addToCart(Integer.parseInt(exArr[1]));
                 default:
                     return super.execute(command);
             }
@@ -36,6 +47,9 @@ public class BuyerController extends Controller {
         Global.io.print("giveFeedback:\t\t\tgive feedback on a particular listing");
         Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
+        Global.io.print("search:\t\t\t\tsearch available product listings");
+        Global.io.print("viewCart:\t\t\tview all items in your cart");
+        Global.io.print("addToCart [id]:\t\t\tadd an item to your cart");
         return super.menu();
     }
 
@@ -51,5 +65,53 @@ public class BuyerController extends Controller {
     public Response viewMessages(){
 
         return new Response(" - End of Messages - ");
+    }
+
+    public Response searchProducts() {
+        // TODO
+        Global.io.print("Enter a search term or type advancedSearch");
+        String term = Global.io.inlineQuestion("");
+        ArrayList<JSONObject> listings = new ArrayList<>();
+
+        if (term.toLowerCase() == "advancedsearch") {
+
+        } else {
+            try {
+                long id = 1;
+                System.out.println((Global.sendGet("/listing").getMessage()));
+            } catch(Exception e) {
+                return new Response("The search was unsuccessful", Status.ERROR);
+            }
+        }
+        return new Response("Found %d products that fit the criteria");
+    }
+
+    public Response viewCart() {
+        // TODO
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray cart = user.getJSONArray("cart");
+
+            Global.io.print("Cart\n----------");
+            float total = 0;
+            if(cart.length() == 0) {
+                Global.io.print("Cart is empty");
+            } else {
+                for (int i = 1; i <= cart.length(); i++) {
+                    JSONObject listing = new JSONObject(Global.sendGet("/listing?id=" + cart.getInt(i-1)).getMessage());
+                    Global.io.print("Item " + i + ": " + listing.getString("name") + ", " + listing.get("cost"));
+                    total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
+                }
+            }
+            Global.io.print("----------\nTotal: " + total);
+        } catch(Exception e) {
+            return new Response("The cart query failed", Status.ERROR);
+        }
+        return new Response("");
+    }
+
+    public Response addToCart(int id) {
+        // TODO
+        return new Response("Added");
     }
 }

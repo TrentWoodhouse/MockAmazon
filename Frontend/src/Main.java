@@ -1,3 +1,4 @@
+import Classes.Buyer;
 import Classes.User;
 import Controllers.Controller;
 import Entities.Response;
@@ -13,6 +14,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 
 import com.google.gson.Gson;
 import org.json.JSONObject;
@@ -61,10 +63,18 @@ public class Main {
                     String password = Global.io.inlineQuestion("New Password: ");
                     String role = Global.io.inlineQuestion("New Role (buyer or seller): ");
 
-                    User tmp = new User();
-                    tmp.id = 4;
-                    tmp.name = name;
-                    tmp.password = password;
+                    User tmp;
+                    if (role.equals("buyer")) {
+                        tmp = new Buyer(new ArrayList<Integer>());
+                        tmp.id = 4;
+                        tmp.name = name;
+                        tmp.password = password;
+                    } else {
+                        tmp = new User();
+                        tmp.id = 4;
+                        tmp.name = name;
+                        tmp.password = password;
+                    }
 
                     if(role.equals("buyer") || role.equals("seller")) {
 
@@ -74,6 +84,7 @@ public class Main {
 
                         if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller")) {
                             Global.io.print("Successfully Created Your Account!");
+
                         } else {
                             Global.io.error("Failed to Create Your Account... Please Try Again");
                         }
