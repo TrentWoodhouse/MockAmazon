@@ -51,7 +51,6 @@ public class SellerController {
 			}
 		}
 
-		seller.id = sellers.size()+1;
 		sellers.add(seller);
 
 		//attempt to add the new Json to a file
