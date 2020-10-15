@@ -55,7 +55,6 @@ public class SellerController extends Controller {
 
         Global.io.print("Creating a new listing:");
         try {
-            listing.put("id", Global.io.inlineQuestion("Enter the listing's Product ID:")); //TODO remove this when automatic id is handled
             listing.put("name", Global.io.inlineQuestion("Name:"));
             listing.put("description", Global.io.inlineQuestion("Description:"));
             listing.put("cost", Global.io.inlineQuestion("Cost:"));
