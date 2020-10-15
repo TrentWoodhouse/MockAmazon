@@ -19,6 +19,7 @@ public class RatingController {
 	@GetMapping("/rating")
 	public Rating getRating(@RequestParam(value = "id", defaultValue = "") String id) {
 
+		//load the file into memory if it isn't already
 		if (ratings == null) {
 			if (ratingFile.exists()) {
 				scanJsonFile();

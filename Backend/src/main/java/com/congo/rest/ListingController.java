@@ -20,6 +20,7 @@ public class ListingController {
 	@GetMapping("/listing")
 	public ArrayList<Listing> getListing(@RequestParam Map<String, String> input) {
 
+		//load the file into memory if it isn't already
 		if (listings == null) {
 			if (listingFile.exists()) {
 				scanJsonFile();
@@ -30,6 +31,7 @@ public class ListingController {
 
 		ArrayList<Listing> listingList = new ArrayList<Listing>();
 		//find the specified listing (or all)
+		if(input.containsKey("all")) return listings;
 		for(Listing l : listings){
 			if((input.containsKey("id") && l.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && l.name.equals(input.get("name")))){
 				listingList.add(l);

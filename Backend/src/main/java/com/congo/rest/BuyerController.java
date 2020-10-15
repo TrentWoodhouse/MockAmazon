@@ -20,6 +20,7 @@ public class BuyerController {
 	@GetMapping("/buyer")
 	public Buyer getBuyer(@RequestParam Map<String, String> input) {
 
+		//load the file into memory if it isn't already
 		if (buyers == null) {
 			if (buyerFile.exists()) {
 				scanJsonFile();

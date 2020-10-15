@@ -3,17 +3,9 @@ import Classes.User;
 import Controllers.Controller;
 import Entities.Response;
 import Enums.UserType;
-import Utils.*;
 import Controllers.*;
 import Utils.Global;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import com.google.gson.Gson;
@@ -76,13 +68,16 @@ public class Main {
                     if(role.equals("buyer") || role.equals("seller")) {
 
                         try {
+                            //add the user to user
                             inputLine = Global.sendPost("/user", new Gson().toJson(tmp).toString()).getMessage();
 
+                            //fetch the id from the created user
                             inputLine = Global.sendGet("/user?name=" + name).getMessage();
                             JSONObject json = new JSONObject(inputLine);
                             long id = json.getLong("id");
                             tmp.id = id;
 
+                            //make the specific role using the same id (for searches where you dont know the role)
                             inputLine = Global.sendPost("/" + role, new Gson().toJson(tmp).toString()).getMessage();
 
                         } catch(Exception e){

@@ -20,6 +20,7 @@ public class UserController {
 	@GetMapping("/user")
 	public User getUser(@RequestParam Map<String, String> input) {
 
+		//load the file into memory if it isn't already
 		if (users == null) {
 			if (userFile.exists()) {
 				scanJsonFile();

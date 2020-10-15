@@ -19,6 +19,7 @@ public class OrderController {
 	@GetMapping("/order")
 	public Order getOrder(@RequestParam(value = "id", defaultValue = "") String id) {
 
+		//load the file into memory if it isn't already
 		if (orders == null) {
 			if (orderFile.exists()) {
 				scanJsonFile();

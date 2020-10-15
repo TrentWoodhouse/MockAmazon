@@ -19,6 +19,7 @@ public class MessageController {
 	@GetMapping("/message")
 	public ArrayList<Message> getMessage(@RequestParam(value = "id", defaultValue = "") String id) {
 
+		//load the file into memory if it isn't already
 		if (messages == null) {
 			if (messageFile.exists()) {
 				scanJsonFile();

@@ -83,9 +83,9 @@ public class Global {
             String inputLine = in.readLine();
             in.close();
 
+            if(inputLine == null) return new Response("", Status.ERROR);
             return new Response(inputLine);
         } catch(Exception e){
-            System.out.println("Error: "+e);
             return new Response(e.getMessage(), Status.ERROR);
         }
     }

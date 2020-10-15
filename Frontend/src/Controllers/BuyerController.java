@@ -4,26 +4,13 @@ import Classes.Message;
 import Entities.Response;
 import Enums.Status;
 import Utils.Global;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.Date;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
 import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Date;
 
 
 public class BuyerController extends Controller {
@@ -37,8 +24,8 @@ public class BuyerController extends Controller {
                     return menu();
                 case "givefeedback":
                     return giveFeedback();
-//                case "sendmessage":
-//                    return sendMessage();
+                case "sendmessage":
+                    return sendMessage();
                 case "viewmessages":
                     return viewMessages();
                 case "search":
@@ -75,66 +62,33 @@ public class BuyerController extends Controller {
         return new Response("You have given feedback. Thanks!");
     }
 
-//    public Response sendMessage() {
-//
-//        String receiver = Global.io.inlineQuestion("Receiver: ");
-//        String message = Global.io.inlineQuestion("Message: ");
-//
-//        //make a message based on input (if possible)
-//        Message m = new Message();
-//        m.id = 0;
-//        m.sender = Integer.parseInt(String.valueOf(Global.currUser.id));
-//
-//        //find the user mentioned
-//        try {
-//            String in = Global.sendGet("http://localhost:8080/seller" + "?name=" + receiver);
-//            int val = 0;
-//            if (in == null || !in.equals("")) {
-//                val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
-//            } else {
-//                in = Global.sendGet("http://localhost:8080/buyer" + "?name=" + receiver);
-//                if (in == null || !in.equals("")) {
-//                    val = Integer.parseInt(String.valueOf(new JSONObject(in).get("id")));
-//                } else {
-//                    return new Response("Message Failed to Send (Recipient doesn't exist)");
-//                }
-//            }
-//            m.receiver = val;
-//            System.out.println("Val=" + val);
-//        } catch (Exception e){
-//            System.out.println(e);
-//        }
-//
-//        m.message = message;
-//        m.timeSent = new Date().toString();
-//        System.out.println(new Gson().toJson(m));
-//
-//        String inputLine = Global.sendPost("http://localhost:8080/message", new Gson().toJson(m).toString());
-//
-//        if(inputLine.equals("")){
-//            return new Response("Message Failed to Send");
-//        }
-//
-//        return new Response("Message Successfully Sent");
-//    }
+    public Response sendMessage() {
+
+        String receiver = Global.io.inlineQuestion("Receiver: ");
+        String message = Global.io.inlineQuestion("Message: ");
+
+        //make a message based on input (if possible)
+        Message m = new Message();
+        m.id = 0;
+        m.sender = Integer.parseInt(String.valueOf(Global.currUser.id));
 
         //find the user mentioned
         try {
             Response in = Global.sendGet("/seller?name=" + receiver);
             int val = 0;
-            if (!(in.getStatus() == Status.ERROR)) {
+            if (!(in.getStatus() == Status.ERROR)) {        //they are a seller
                 val = Integer.parseInt(String.valueOf(new JSONObject(in.getMessage()).get("id")));
-            } else {
+            } else {                                        //they are a buyer or nonexistent
                 in = Global.sendGet("/buyer?name=" + receiver);
-                if (!(in.getStatus() == Status.ERROR)) {
+                if (!(in.getStatus() == Status.ERROR)) {    //they are a buyer
                     val = Integer.parseInt(String.valueOf(new JSONObject(in.getMessage()).get("id")));
-                } else {
+                } else {                                    //they are nonexistent
                     return new Response("Message Failed to Send (Recipient doesn't exist)");
                 }
             }
             m.receiver = val;
             System.out.println("Val=" + val);
-        } catch (Exception e){
+        } catch (JSONException e){
             return new Response("Message Failed to Send");
         }
 
@@ -149,16 +103,15 @@ public class BuyerController extends Controller {
 
         return new Response("Message Successfully Sent");
     }
-
     public Response viewMessages(){
 
         Response inputLine = Global.sendGet("/message?id="+Global.currUser.id);
-        System.out.println(inputLine.getMessage());
+        //Get an array of messages (jsonArray)
         JSONArray jsonArray;
-        JsonParser jsonParser;
         try {
             jsonArray = new JSONArray(inputLine.getMessage());
 
+            //send each message
             for(int i=0 ; i<jsonArray.length() ; i++){
                 JSONObject m = jsonArray.getJSONObject(i);
 
@@ -209,7 +162,7 @@ public class BuyerController extends Controller {
             switch(advanced.toLowerCase()) {
                 case "price less than x":
                     // get all listings w/ price lower than x
-                    BigDecimal.valueOf()
+                    //BigDecimal.valueOf()
                     results = search(validListings, term);
                 case "price greater than x":
 
