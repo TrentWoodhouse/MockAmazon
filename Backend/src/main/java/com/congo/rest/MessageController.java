@@ -17,7 +17,7 @@ public class MessageController {
 	private File messageFile = new File("./storage/messages.txt");
 
 	@GetMapping("/message")
-	public Message getUser(@RequestParam(value = "id", defaultValue = "") String id) {
+	public Message getMessage(@RequestParam(value = "id", defaultValue = "") String id) {
 
 		if (messages == null) {
 			if (messageFile.exists()) {
@@ -38,7 +38,7 @@ public class MessageController {
 	}
 
 	@PostMapping("/message")
-	public String postUser(@RequestBody Message message) {
+	public String postMessage(@RequestBody Message message) {
 
 		if (messages == null) {
 			scanJsonFile();
@@ -86,5 +86,57 @@ public class MessageController {
 		} catch(FileNotFoundException e){
 			System.out.println(e);
 		}
+	}
+
+	@PatchMapping("/message")
+	public String updateMessage(@RequestBody Message message) {
+
+		if (messages == null) {
+			scanJsonFile();
+		}
+		if(messages != null) {
+			for (int i=0 ; i<messages.size() ; i++) {
+				Message u = messages.get(i);
+				if (u.id == message.id) {
+					messages.set(i, message);
+					return "Succeeded In Updating Message";
+				}
+			}
+		}
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!messageFile.exists()) messageFile.createNewFile();
+			FileWriter writer = new FileWriter(messageFile);
+			writer.write(new Gson().toJson(messages));
+			writer.close();
+
+			return "Successfully Sent Message";
+		} catch (Exception e){
+			System.out.println(e);
+		}
+
+		return "Failed to Update Message";
+	}
+
+	@DeleteMapping("/message")
+	public Message deleteMessage(@RequestParam(value = "id", defaultValue = "") String id) {
+
+		if (messages == null) {
+			if (messageFile.exists()) {
+				scanJsonFile();
+			} else {
+				return null;
+			}
+		}
+
+		//find the specified message (or all)
+		for(Message m : messages){
+			if(m.id == Long.parseLong(id)){
+				messages.remove(m);
+			}
+		}
+
+		return null;
 	}
 }

@@ -17,7 +17,7 @@ public class OrderController {
 	private File orderFile = new File("./storage/orders.txt");
 
 	@GetMapping("/order")
-	public Order getUser(@RequestParam(value = "id", defaultValue = "") String id) {
+	public Order getOrder(@RequestParam(value = "id", defaultValue = "") String id) {
 
 		if (orders == null) {
 			if (orderFile.exists()) {
@@ -38,7 +38,7 @@ public class OrderController {
 	}
 
 	@PostMapping("/order")
-	public String postUser(@RequestBody Order order) {
+	public String postOrder(@RequestBody Order order) {
 
 		if (orders == null) {
 			scanJsonFile();
@@ -86,5 +86,57 @@ public class OrderController {
 		} catch(FileNotFoundException e){
 			System.out.println(e);
 		}
+	}
+
+	@PatchMapping("/order")
+	public String updateOrder(@RequestBody Order order) {
+
+		if (orders == null) {
+			scanJsonFile();
+		}
+		if(orders != null) {
+			for (int i=0 ; i<orders.size() ; i++) {
+				Order u = orders.get(i);
+				if (u.id == order.id) {
+					orders.set(i, order);
+					return "Succeeded In Updating Order";
+				}
+			}
+		}
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!orderFile.exists()) orderFile.createNewFile();
+			FileWriter writer = new FileWriter(orderFile);
+			writer.write(new Gson().toJson(orders));
+			writer.close();
+
+			return "Successfully Sent Order";
+		} catch (Exception e){
+			System.out.println(e);
+		}
+
+		return "Failed to Update Order";
+	}
+
+	@DeleteMapping("/order")
+	public Order deleteOrder(@RequestParam(value = "id", defaultValue = "") String id) {
+
+		if (orders == null) {
+			if (orderFile.exists()) {
+				scanJsonFile();
+			} else {
+				return null;
+			}
+		}
+
+		//find the specified order (or all)
+		for(Order o : orders){
+			if(o.id == Long.parseLong(id)){
+				orders.remove(o);
+			}
+		}
+
+		return null;
 	}
 }

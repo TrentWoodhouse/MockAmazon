@@ -62,7 +62,7 @@ public class Main {
                     String role = Global.io.inlineQuestion("New Role (buyer or seller): ");
 
                     User tmp = new User();
-                    tmp.id = 4;
+                    tmp.id = 0;
                     tmp.name = name;
                     tmp.password = password;
 
@@ -89,8 +89,8 @@ public class Main {
                     }
                 }
                 if(userType != null){
-                    String name = Global.io.inlineQuestion(" Username: ");
-                    String pass = Global.io.inlineQuestion(" Password: ");
+                    String name = Global.io.inlineQuestion("Username: ");
+                    String pass = Global.io.inlineQuestion("Password: ");
 
                     //Add an HTTP connection
                     try {
