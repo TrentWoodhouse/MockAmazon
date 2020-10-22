@@ -1,5 +1,1 @@
-<<<<<<< Updated upstream
 [{"id":2,"name":"other","password":"Passy","messages":[1,24,3]},{"id":1,"name":"Clint","password":"Passer","messages":[1,2,3]},{"id":4,"name":"TrentWoodhouse","password":"fullsend"}]
-=======
-[{"id":1,"name":"other","password":"Passed","messages":[1,24,3]}]
->>>>>>> Stashed changes
