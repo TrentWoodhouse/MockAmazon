@@ -1,1 +1,1 @@
-[{"id":1,"sender":1,"receiver":2,"message":"test message","timeSent":"Oct 27, 2010 6:58:22 AM"},{"id":2,"sender":3,"receiver":4,"message":"yeet","timeSent":"Thu Oct 15 12:52:21 CDT 2020"}]
+[{"id":1,"sender":1,"receiver":2,"message":"test message","timeSent":"Oct 27, 2010 6:58:22 AM"},{"id":2,"sender":1,"receiver":2,"message":"Test","timeSent":"Thu Oct 15 14:24:52 CDT 2020"}]

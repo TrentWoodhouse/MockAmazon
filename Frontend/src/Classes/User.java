@@ -7,6 +7,7 @@ public class User {
 	public long id;
 	public String name;
 	public String password;
+	public String paymentCard;
 	public ArrayList<Integer> messages;
 
 	public User(){}

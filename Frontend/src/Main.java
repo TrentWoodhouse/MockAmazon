@@ -53,6 +53,7 @@ public class Main {
                 do {
                     String name = Global.io.inlineQuestion("New Username: ");
                     String password = Global.io.inlineQuestion("New Password: ");
+                    String paymentCard = Global.io.inlineQuestion("New Payment Card: ");
                     String role = Global.io.inlineQuestion("New Role (buyer or seller): ");
 
                     User tmp;
@@ -64,6 +65,29 @@ public class Main {
                     tmp.id = 4;
                     tmp.name = name;
                     tmp.password = password;
+
+                    //verify payment card
+                    if(paymentCard.length() > 16 || paymentCard.length() < 13) {
+                        Global.io.error("Incorrect payment Card");
+                        continue;
+                    }
+                    int firstSum = 0;
+                    for(int i=paymentCard.length()-2 ; i>=0 ; i = i-2){
+                        firstSum += oneDigit(Integer.parseInt(paymentCard.charAt(i)+"")*2);
+                    }
+                    int secondSum = 0;
+                    for(int i=paymentCard.length()-1 ; i>=0 ; i = i-2){
+                        secondSum += Integer.parseInt(paymentCard.charAt(i)+"");
+                    }
+                    System.out.println(firstSum);
+                    System.out.println(secondSum);
+                    System.out.println(((firstSum+secondSum) % 10));
+                    if(((firstSum+secondSum) % 10) != 0){
+                        Global.io.error("Incorrect payment Card");
+                        continue;
+                    }
+
+                    tmp.paymentCard = paymentCard;
 
                     if(role.equals("buyer") || role.equals("seller")) {
 
@@ -160,5 +184,17 @@ public class Main {
                     Global.io.error(response.getMessage());
             }
         }
+    }
+
+    public static int oneDigit(int in){
+
+        if(in>9){
+            String tmp = ""+in;
+            in = 0;
+            for(int i=tmp.length()-1 ; i>=0 ; i--){
+                in += Integer.parseInt(tmp.charAt(i)+"");
+            }
+        }
+        return in;
     }
 }
