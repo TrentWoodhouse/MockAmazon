@@ -201,11 +201,7 @@ public class BuyerController extends Controller {
         if (response.equalsIgnoreCase("y")) {
             Global.io.print("Which one? Enter the number");
             String number = Global.io.inlineQuestion("$");
-<<<<<<< HEAD
             addToCart(results.get(Integer.parseInt(number)-1).getInt("id"));
-=======
-            addToCart(results.get(Integer.parseInt(number)).getInt("id"));
->>>>>>> 1578950d928adbb1a91c522094ff7d21f55f8650
         }
         return new Response("");
         } catch(Exception e) {
@@ -273,17 +269,9 @@ public class BuyerController extends Controller {
 
             user.remove("cart");
             user.put("cart", newCart);
-<<<<<<< HEAD
             return Global.sendPatch("/listing", user.toString());
         } catch(Exception e) {
             return new Response("The add to cart query failed", Status.ERROR);
         }
-=======
-            Global.sendPatch("/buyer?name=" +Global.currUser.name, user.toString());
-        } catch(Exception e) {
-            return new Response("The add to cart query failed", Status.ERROR);
-        }
-        return new Response("");
->>>>>>> 1578950d928adbb1a91c522094ff7d21f55f8650
     }
 }
