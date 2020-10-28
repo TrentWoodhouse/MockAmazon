@@ -8,6 +8,7 @@ public class Listing {
 	public String description;
 	public int seller;
 	public float cost;
+	public String maxDelivery;
 	public ArrayList<Integer> orders;
 	public ArrayList<Integer> ratings;
 

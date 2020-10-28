@@ -1,6 +1,9 @@
 package Controllers;
 
+import Classes.DeliveryReport;
+import Classes.Listing;
 import Classes.Message;
+import Classes.Order;
 import Entities.Response;
 import Enums.Status;
 import Utils.Global;
@@ -19,6 +22,7 @@ public class BuyerController extends Controller {
     public Response execute(String command) {
         String[] exArr = command.trim().split("\\s+");
         try {
+            //Global.io.print(getNotifications().getMessage());
             switch(exArr[0].toLowerCase()) {
                 case "menu":
                     return menu();
@@ -32,6 +36,8 @@ public class BuyerController extends Controller {
                     return searchProducts();
                 case "viewcart":
                     return viewCart();
+                case "reportorder":
+                    return reportOrder();
                 default:
                     return super.execute(command);
             }
@@ -51,6 +57,7 @@ public class BuyerController extends Controller {
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
         Global.io.print("search:\t\t\t\tsearch available product listings");
         Global.io.print("viewCart:\t\t\tview all items in your cart");
+        Global.io.print("reportOrder:\t\t\treport one of your active orders");
         return super.menu();
     }
 
@@ -272,6 +279,44 @@ public class BuyerController extends Controller {
             return Global.sendPatch("/listing", user.toString());
         } catch(Exception e) {
             return new Response("The add to cart query failed", Status.ERROR);
+        }
+    }
+
+    public Response reportOrder(){
+        try{
+
+            //get the objects to fill the report
+            String orderID = Global.io.inlineQuestion("What order number do you want to report? : ");
+            Order order = new Gson().fromJson(Global.sendGet("/order?id="+orderID).getMessage(), Order.class);
+            JSONArray jsonArray = new JSONArray(Global.sendGet("/listing?id=" + order.listings.get(0)).getMessage());
+            Listing listing = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), Listing.class);
+
+            //create the basis for the report
+            DeliveryReport report = new DeliveryReport();
+            report.id = 0;
+            report.buyer = Global.currUser.id;
+            report.seller = listing.seller;
+            report.listing = order.listings.get(0);
+            report.order = order.id;
+            report.date = new Date().toString();
+            report.buyerMessage = Global.io.inlineQuestion("Report Message: ");
+            report.sellerMessage = "";
+            report.appealed = false;
+
+            String json = new Gson().toJson(report);
+            return Global.sendPost("/deliveryReport", json);
+        } catch(Exception e){
+            return new Response("Failed to create report", Status.ERROR);
+        }
+    }
+
+    public Response getNotifications(){
+        try {
+            JSONArray deliveryReports = new JSONArray(Global.sendGet("/deliveryReport?buyer=" + Global.currUser.id).getMessage());
+            if(deliveryReports.length() > 0) return new Response(deliveryReports.length() + " reports have been resolved");
+            else return new Response("No new Notifications");
+        } catch(Exception e){
+            return new Response("Failed to load notifications", Status.ERROR);
         }
     }
 }

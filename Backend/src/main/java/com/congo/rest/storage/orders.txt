@@ -1,1 +1,1 @@
-[{"id":1,"listings":[1,2]},{"id":2,"listings":[1,2]}]
+[{"id":1,"endDate":"Thu Oct 15 14:24:52 CDT 2020","listings":[1,2]},{"id":2,"endDate":"Thu Oct 15 14:24:52 CDT 2020","listings":[1,2]}]
