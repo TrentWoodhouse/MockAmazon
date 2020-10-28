@@ -1,1 +1,1 @@
-[{"id":1,"name":"test","description":"tests","seller":1,"cost":3232.0,"maxDelivery":"12-5"}]
+[{"id":1,"name":"test","description":"tests","seller":1,"cost":3232.0,"maxDelivery":"12-5"},{"id":2,"name":"NVIDIA GEFORCE RTX 2080 Ti Founders Edition","description":"NVIDIA\u0027s newest flagship graphics card","seller":1,"cost":1899.99,"maxDelivery":"2-0"}]
