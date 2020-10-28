@@ -64,6 +64,30 @@ public class SellerController extends Controller {
         return new Response("Listing 1\nListing 2");
     }
 
+    public String chooseCategory(String choice) {
+        if (choice.equals("1")) {
+            return "apparel";
+        } else if (choice.equals("2")) {
+            return "beauty/personal care";
+        } else if (choice.equals("3")) {
+            return "electronics";
+        } else if (choice.equals("4")) {
+            return "entertainment";
+        } else if (choice.equals("5")) {
+            return "food products";
+        } else if (choice.equals("6")) {
+            return "furniture";
+        } else if (choice.equals("7")) {
+            return "household products";
+        } else if (choice.equals("8")) {
+            return "toys/games";
+        } else if (choice.equals("9")) {
+            return "miscellaneous";
+        } else {
+            return chooseCategory(Global.io.inlineQuestion("Please enter a valid choice: "));
+        }
+    }
+
     public Response createListing() {
         JSONObject listing = new JSONObject();
 
@@ -71,6 +95,17 @@ public class SellerController extends Controller {
         try {
             listing.put("name", Global.io.inlineQuestion("Name:"));
             listing.put("description", Global.io.inlineQuestion("Description:"));
+            Global.io.print("Choose the category that best fits the product by entering one of the following numbers:" +
+                    "\n1. Apparel\t\t\t\t\tClothing, Shoes, Accessories, etc." +
+                    "\n2. Beauty/Personal Cart\t\tMakeup, Shampoo, Deodorant, etc." +
+                    "\n3. Electronics\t\t\t\tComputers, Phones, Cameras, etc." +
+                    "\n4. Entertainment\t\t\tMovies, Video Games, Books, etc." +
+                    "\n5. Food Products\t\t\tGroceries, Baking supplies, etc." +
+                    "\n6. Furniture\t\t\t\tCouches, Desks, Mattresses, etc." +
+                    "\n7. Household Products\t\tCleaning supplies, Tools, Dishes, etc." +
+                    "\n8. Toys/Games\t\t\t\tBoard Games, Legos, Dolls, etc." +
+                    "\n9. Miscellaneous\t\t\tAnything that doesn't fit one of the 8 main categories");
+            listing.put("category", chooseCategory(Global.io.inlineQuestion("")));
             listing.put("cost", Global.io.inlineQuestion("Cost:"));
             listing.put("seller", Global.currUser.id);
             listing.put("maxDelivery", Global.io.inlineQuestion("Maximum Delivery time (days-hours):"));
