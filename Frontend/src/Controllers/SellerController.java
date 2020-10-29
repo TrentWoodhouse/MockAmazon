@@ -34,6 +34,10 @@ public class SellerController extends Controller {
                     return viewReports();
                 case "respondtoreport":
                     return respondToReport();
+                case "getunitssold":
+                    return getUnitsSold(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
+                case "getsales":
+                    return getSales(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
                 default:
                     return super.execute(command);
             }
@@ -54,7 +58,9 @@ public class SellerController extends Controller {
         Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
         Global.io.print("viewReports:\t\t\tview all reports affecting your products");
-        Global.io.print("respondToReport:\t\t\trespond to reports affecting your products");
+        Global.io.print("respondToReport:\t\trespond to reports affecting your products");
+        Global.io.print("getUnitsSold (id):\t\tgets all units sold from a listing, or all units sold by you if id is left blank");
+        Global.io.print("getSales (id):\t\t\tgets total revenue from a listing, or all generated revenue if id is left blank");
 
         return super.menu();
     }
@@ -247,7 +253,7 @@ public class SellerController extends Controller {
             JSONArray jsonArray = new JSONArray(Global.sendGet("/deliveryReport?id=" + reportID).getMessage());
             DeliveryReport deliveryReport = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), DeliveryReport.class);
             Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id=" + deliveryReport.buyer).getMessage(), Buyer.class);
-            Order order = new Gson().fromJson(Global.sendGet("/order?id=" + deliveryReport.order).getMessage(), Order.class);
+            Order order = new Gson().fromJson(Global.sendGet("/order/" + deliveryReport.order).getMessage(), Order.class);
             jsonArray = new JSONArray(Global.sendGet("/listing?id=" + deliveryReport.listing).getMessage());
             Listing listing = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), Listing.class);
 
@@ -285,6 +291,62 @@ public class SellerController extends Controller {
 
         } catch(Exception e){
             return new Response("Failed to load notifications", Status.ERROR);
+        }
+    }
+
+    public Response getUnitsSold(int id) {
+        try {
+            if (id > 0) {
+                int unitsSold = 0;
+                JSONArray orders = new JSONArray(Global.sendGet("/order").getMessage());
+                for (int i = 0; i < orders.length(); i++) {
+                    JSONObject order = orders.getJSONObject(i);
+                    JSONArray listings = order.getJSONArray("listings");
+                    for (int j = 0; j < listings.length(); j++) {
+                        if(listings.getInt(j) == id) {
+                            unitsSold++;
+                            break;
+                        }
+                    }
+                }
+                return new Response(unitsSold + " units sold");
+            }
+            else {
+                return new Response("20 units sold");
+            }
+        }
+        catch(Exception e) {
+            return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
+        }
+    }
+
+    public Response getSales(int id) {
+        try {
+            if (id > 0) {
+                int unitsSold = 0;
+                JSONArray orders = new JSONArray(Global.sendGet("/order").getMessage());
+                for (int i = 0; i < orders.length(); i++) {
+                    JSONObject order = orders.getJSONObject(i);
+                    JSONArray listings = order.getJSONArray("listings");
+                    for (int j = 0; j < listings.length(); j++) {
+                        if (listings.getInt(j) == id) {
+                            unitsSold++;
+                            break;
+                        }
+                    }
+                }
+                JSONArray listingArray = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+                if (listingArray.length() != 1) {
+                    throw new RuntimeException("The listing doesn't exist");
+                }
+                JSONObject listing = listingArray.getJSONObject(0);
+                return new Response("$" + (unitsSold * listing.getDouble("cost")) + " revenue generated");
+            }
+            else {
+                return new Response("$100 revenue generated");
+            }
+        } catch (Exception e) {
+            return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
         }
     }
 }

@@ -9,6 +9,7 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Scanner;
 
 @RestController
@@ -17,8 +18,8 @@ public class OrderController {
 	private static ArrayList<Order> orders;
 	private File orderFile = new File("./storage/orders.txt");
 
-	@GetMapping("/order")
-	public Order getOrder(@RequestParam(value = "id", defaultValue = "") String id) {
+	@GetMapping("/order/{id}")
+	public Order getOrder(@PathVariable Long id) {
 
 		//load the file into memory if it isn't already
 		if (orders == null) {
@@ -31,12 +32,26 @@ public class OrderController {
 
 		//find the specified order (or all)
 		for(Order o : orders){
-			if(o.id == Long.parseLong(id)){
+			if(o.id == id){
 				return o;
 			}
 		}
 
 		return null;
+	}
+
+	@GetMapping("/order")
+	public ArrayList<Order> getOrdersAll(@RequestParam Map<String, String> input) {
+
+		//load the file into memory if it isn't already
+		if (orders == null) {
+			if (orderFile.exists()) {
+				scanJsonFile();
+			} else {
+				return null;
+			}
+		}
+		return orders;
 	}
 
 	@PostMapping("/order")

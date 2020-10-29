@@ -501,7 +501,7 @@ public class BuyerController extends Controller {
 
             //get the objects to fill the report
             String orderID = Global.io.inlineQuestion("What order number do you want to report? : ");
-            Order order = new Gson().fromJson(Global.sendGet("/order?id="+orderID).getMessage(), Order.class);
+            Order order = new Gson().fromJson(Global.sendGet("/order/"+orderID).getMessage(), Order.class);
             JSONArray jsonArray = new JSONArray(Global.sendGet("/listing?id=" + order.listings.get(0)).getMessage());
             Listing listing = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), Listing.class);
 

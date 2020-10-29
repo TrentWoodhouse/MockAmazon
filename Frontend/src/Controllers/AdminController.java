@@ -72,7 +72,7 @@ public class AdminController extends Controller {
             DeliveryReport deliveryReport = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), DeliveryReport.class);
             Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id=" + deliveryReport.buyer).getMessage(), Buyer.class);
             Seller seller = new Gson().fromJson(Global.sendGet("/seller?id=" + deliveryReport.buyer).getMessage(), Seller.class);
-            Order order = new Gson().fromJson(Global.sendGet("/order?id=" + deliveryReport.order).getMessage(), Order.class);
+            Order order = new Gson().fromJson(Global.sendGet("/order/" + deliveryReport.order).getMessage(), Order.class);
             jsonArray = new JSONArray(Global.sendGet("/listing?id=" + deliveryReport.listing).getMessage());
             Listing listing = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), Listing.class);
 
