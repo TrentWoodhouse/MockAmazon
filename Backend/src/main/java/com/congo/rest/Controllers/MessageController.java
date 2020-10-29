@@ -102,7 +102,7 @@ public class MessageController {
 				Message u = messages.get(i);
 				if (u.id == message.id) {
 					messages.set(i, message);
-					return "Succeeded In Updating Message";
+					//return "Succeeded In Updating Message";
 				}
 			}
 		}
@@ -134,10 +134,17 @@ public class MessageController {
 		}
 
 		//find the specified message (or all)
-		for(Message m : messages){
-			if(m.id == Long.parseLong(id)){
-				messages.remove(m);
-			}
+		messages.removeIf(m -> m.id == Long.parseLong(id));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!messageFile.exists()) messageFile.createNewFile();
+			FileWriter writer = new FileWriter(messageFile);
+			writer.write(new Gson().toJson(messages));
+			writer.close();
+
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;

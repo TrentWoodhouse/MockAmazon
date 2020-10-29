@@ -135,10 +135,17 @@ public class ListingController {
 		}
 
 		//find the specified listing (or all)
-		for(Listing u : listings){
-			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
-				listings.remove(u);
-			}
+		listings.removeIf(u -> (input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name"))));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!listingFile.exists()) listingFile.createNewFile();
+			FileWriter writer = new FileWriter(listingFile);
+			writer.write(new Gson().toJson(listings));
+			writer.close();
+
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;

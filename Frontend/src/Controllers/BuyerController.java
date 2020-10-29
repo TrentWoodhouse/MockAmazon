@@ -9,13 +9,11 @@ import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.*;
+
 import org.json.JSONArray;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.Locale;
 
 import com.google.gson.Gson;
 
@@ -46,6 +44,10 @@ public class BuyerController extends Controller {
                     return getRecommendation();
                 case "manageprime":
                     return managePrime();
+                case "flaglisting":
+                    return flagListing();
+                case "checkcredibility":
+                    return checkCredibility();
                 default:
                     return super.execute(command);
             }
@@ -68,6 +70,8 @@ public class BuyerController extends Controller {
         Global.io.print("reportOrder:\t\t\treport one of your active orders");
         Global.io.print("recommendation:\t\t\tget a product recommendation");
         Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
+        Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
+        Global.io.print("checkCredibility:\t\t\tcheck your standing with the Congo community");
         return super.menu();
     }
 
@@ -328,8 +332,11 @@ public class BuyerController extends Controller {
 
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
+                Buyer buyer = new Gson().fromJson(user.toString(), Buyer.class);
                 for (int i = 0; i < cartInt.size(); i++) {
                     Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage(), Listing[].class);
+                    buyer.credibility = (float) Math.min(buyer.credibility+0.2, 5.0);
+                    buyer.balance -= listing[0].cost;
 
                     // add order to buyer
                     ArrayList<Integer> newCart = new ArrayList<>();
@@ -372,6 +379,7 @@ public class BuyerController extends Controller {
                     Global.sendPatch("/buyer", user.toString()).getMessage();
                     Global.sendPost("/order", new Gson().toJson(order));
                 }
+                Global.sendPatch("/buyer", new Gson().toJson(buyer));
                 return new Response("Purchase Successful");
             }
         } catch(Exception e) {
@@ -606,6 +614,8 @@ public class BuyerController extends Controller {
 
                 buyer.balance += listing.cost;
                 seller.balance -= listing.cost;
+                Global.sendPatch("/buyer", new Gson().toJson(buyer));
+                Global.sendPatch("/seller", new Gson().toJson(seller));
                 Global.sendDelete("/order?id=" + order.id);
 
                 return new Response("The order is overdue, a refund has been deposited in your account");
@@ -628,6 +638,34 @@ public class BuyerController extends Controller {
         } catch(Exception e){
             return new Response("Failed to create report", Status.ERROR);
         }
+    }
+
+    public Response flagListing(){
+        //make the flag
+        Flag flag = new Flag();
+        flag.id = 0;
+        flag.user = Global.currUser.id;
+        String listingName = Global.io.inlineQuestion("What listing do you want to report? (give the name) - ");
+
+        if(new Gson().fromJson(Global.sendGet("/user?id=" + Global.currUser.id).getMessage(), User.class).credibility < 2.0) return new Response("Your credibility is too low to flag", Status.ERROR);
+
+        try{
+            //get the listing id
+            Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?name=" + listingName).getMessage(), Listing[].class);
+
+            flag.listing = listing[0].id;
+            flag.reason = Global.io.inlineQuestion("Why should this listing be removed? - ");
+
+            //send the flag
+            return Global.sendPost("/flag", new Gson().toJson(flag));
+        } catch(Exception e){
+            return new Response("Failed to flag listing", Status.ERROR);
+        }
+    }
+
+    public Response checkCredibility(){
+        float cred = new Gson().fromJson(Global.sendGet("/user?id=" + Global.currUser.id).getMessage(), User.class).credibility;
+        return new Response("Your Credibility is:" + cred);
     }
 
     public Response getNotifications(){

@@ -101,7 +101,7 @@ public class OrderController {
 				Order u = orders.get(i);
 				if (u.id == order.id) {
 					orders.set(i, order);
-					return "Succeeded In Updating Order";
+					//return "Succeeded In Updating Order";
 				}
 			}
 		}
@@ -133,10 +133,16 @@ public class OrderController {
 		}
 
 		//find the specified order (or all)
-		for(Order o : orders){
-			if(o.id == Long.parseLong(id)){
-				orders.remove(o);
-			}
+		orders.removeIf(o -> o.id == Long.parseLong(id));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!orderFile.exists()) orderFile.createNewFile();
+			FileWriter writer = new FileWriter(orderFile);
+			writer.write(new Gson().toJson(orders));
+			writer.close();
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;

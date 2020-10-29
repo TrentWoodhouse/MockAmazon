@@ -89,6 +89,7 @@ public class Global {
 
     public static Response sendGet(String route){
         try {
+            route = route.replaceAll(" ", "+");
             URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");     //insecure, I know
@@ -105,6 +106,7 @@ public class Global {
 
     public static Response sendDelete(String route){
         try {
+            route = route.replaceAll(" ", "+");
             URL url = new URL(apiHost + route);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("DELETE");     //insecure, I know
