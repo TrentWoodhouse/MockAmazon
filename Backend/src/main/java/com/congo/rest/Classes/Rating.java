@@ -1,4 +1,4 @@
-package com.congo.rest;
+package com.congo.rest.Classes;
 
 public class Rating {
 	public long id;

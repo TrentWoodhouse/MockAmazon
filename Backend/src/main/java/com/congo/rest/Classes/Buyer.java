@@ -1,4 +1,4 @@
-package com.congo.rest;
+package com.congo.rest.Classes;
 
 import java.util.ArrayList;
 

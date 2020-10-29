@@ -1,4 +1,4 @@
-package com.congo.rest;
+package com.congo.rest.Classes;
 
 public class DeliveryReport {
 	public long id;

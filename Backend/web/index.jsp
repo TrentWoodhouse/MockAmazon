@@ -1,6 +1,6 @@
 <%--
   Created by IntelliJ IDEA.
-  main.java.com.congo.rest.User: Clint
+  main.java.com.congo.rest.Classes.User: Clint
   Date: 10/13/2020
   Time: 7:22 PM
   To change this template use File | Settings | File Templates.

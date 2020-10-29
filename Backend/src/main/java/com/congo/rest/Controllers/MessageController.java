@@ -1,5 +1,6 @@
-package com.congo.rest;
+package com.congo.rest.Controllers;
 
+import com.congo.rest.Classes.Message;
 import com.google.gson.Gson;
 import org.springframework.web.bind.annotation.*;
 
