@@ -282,7 +282,10 @@ public class BuyerController extends Controller {
             results = search(listings, term);
         }
         for (int i = 1; i<=results.size(); i++) {
-            Global.io.print("Item " + i + ": " + results.get(i-1).getString("name") + ", Description: " + results.get(i-1).getString("description") + ", Cost: " + results.get(i-1).get("cost"));
+            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + results.get(i-1).getInt("id")).getMessage());
+            double sale = results.get(i-1).getDouble("salePercentage") != 1 ? results.get(i-1).getDouble("salePercentage") : seller.getDouble("salePercentage");
+            String saleText = sale != 1 ? " (" + Math.round((1 - sale) * 100) + "% off)" : "";
+            Global.io.print("Item " + i + ": " + results.get(i-1).getString("name") + ", Description: " + results.get(i-1).getString("description") + ", Cost: " + (Math.floor(results.get(i-1).getDouble("cost") * sale * 100) / 100) + saleText);
         }
         Global.io.print("Found " + results.size() + " products that fit the criteria");
         if (results.size() == 0) {
@@ -312,7 +315,7 @@ public class BuyerController extends Controller {
             JSONArray orders = user.getJSONArray("orders");
 
             // checks contents of the cart and displays items and prices, as well as total price
-            Global.io.print("Cart\t\tPrice\t\t\tItem\n-------------------------------------------------------------------");
+            Global.io.print("Cart\t\tPrice\t\t\tItem\t\t\tSale\t\t\tFinal\n-------------------------------------------------------------------");
             float total = 0;
             if(cart.length() == 0) {
                 Global.io.print("Cart is empty");
@@ -320,9 +323,13 @@ public class BuyerController extends Controller {
                 for (int i = 1; i <= cart.length(); i++) {
                     JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i-1)).getMessage());
                     JSONObject listing = arr.getJSONObject(0);
+                    JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("id")).getMessage());
+                    double sale = listing.getDouble("salePercentage") != 1 ? listing.getDouble("salePercentage") : seller.getDouble("salePercentage");
+                    String saleText = sale != 1 ? Math.round((1 - sale) * 100) + "% off" : "";
+                    double actualCost = (Math.floor(listing.getDouble("cost") * sale * 100) / 100);
                     cartInt.add(cart.getInt(i-1));
-                    Global.io.print("Item " + i + ":\t\t$" + listing.get("cost") + "\t\t\t" + listing.getString("name"));
-                    total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
+                    Global.io.print("Item " + i + ":\t\t$" + listing.get("cost") + "\t\t\t" + listing.getString("name") + "\t\t" + saleText + "\t\t\t$" + actualCost);
+                    total += BigDecimal.valueOf(actualCost).floatValue();
                 }
             }
             Global.io.print("-------------------------------------------------------------------\nTotal: $" + total + "\n");

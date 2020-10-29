@@ -1,1 +1,1 @@
-[{"id":1,"name":"Congo Dot","description":"3rg gen smart speaker","seller":3,"cost":29.99,"maxDelivery":"2-0","category":"electronics"},{"id":3,"name":"Apple iPhone 12 Pro ","description":"128GB","seller":3,"cost":999.99,"maxDelivery":"2-0","category":"electronics"}]
+[{"id":1,"name":"Congo Dot","description":"3rg gen smart speaker","seller":3,"cost":29.99,"salePercentage":0.7,"maxDelivery":"2-0","category":"electronics"},{"id":3,"name":"Apple iPhone 12 Pro ","description":"128GB","seller":3,"cost":999.99,"salePercentage":1,"maxDelivery":"2-0","category":"electronics"}]

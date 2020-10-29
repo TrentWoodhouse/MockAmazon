@@ -53,6 +53,7 @@ public class SellerController {
 			}
 		}
 
+		seller.salePercentage = 1;
 		sellers.add(seller);
 
 		//attempt to add the new Json to a file

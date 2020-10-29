@@ -8,6 +8,8 @@ public class Buyer extends User {
 	public ArrayList<Integer> ratings;
 	public ArrayList<Integer> categories;
 	public int congo;
+	public double primePoints;
+	public double rewardsCash;
 
 	public Buyer(ArrayList<Integer> cart, ArrayList<Integer> orders, ArrayList<Integer> ratings) {
 		super();
@@ -18,5 +20,7 @@ public class Buyer extends User {
 		int i = 0;
 		while (i < 9) {categories.add(0); i++;}
 		congo = 0;
+		primePoints = 0;
+		rewardsCash = 0;
 	}
 }

@@ -56,6 +56,7 @@ public class ListingController {
 		}
 
 		listing.id = listings.size()+1;
+		listing.salePercentage = 1;
 		listings.add(listing);
 
 		//attempt to add the new Json to a file
