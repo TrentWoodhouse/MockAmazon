@@ -8,6 +8,8 @@ public class Buyer extends User {
 	public ArrayList<Integer> ratings;
 	public ArrayList<Integer> categories;
 	public int congo;
+	public double primePoints;
+	public double rewardsCash;
 
 	public Buyer(ArrayList<Integer> cart, ArrayList<Integer> orders, ArrayList<Integer> ratings) {
 		super();

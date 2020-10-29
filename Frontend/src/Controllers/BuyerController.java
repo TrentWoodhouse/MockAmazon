@@ -25,6 +25,7 @@ public class BuyerController extends Controller {
         String[] exArr = command.trim().split("\\s+");
         try {
             //Global.io.print(getNotifications().getMessage());
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             switch(exArr[0].toLowerCase()) {
                 case "menu":
                     return menu();
@@ -37,7 +38,7 @@ public class BuyerController extends Controller {
                 case "search":
                     return searchProducts();
                 case "viewcart":
-                    return viewCart();
+                        return viewCart();
                 case "reportorder":
                     return reportOrder();
                 case "recommendation":
@@ -304,32 +305,72 @@ public class BuyerController extends Controller {
         }
     }
 
+    public void cartPrint(JSONObject user, ArrayList<Integer> cartInt) {
+        try {
+            JSONArray cart = user.getJSONArray("cart");
+            JSONArray orders = user.getJSONArray("orders");
+            Global.io.print("Cart\t\tPrice\t\t\tItem\n-------------------------------------------------------------------");
+            float total = 0;
+            float save = 0;
+            if (cart.length() == 0) {
+                Global.io.print("Cart is empty");
+            } else {
+                for (int i = 1; i <= cart.length(); i++) {
+                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i - 1)).getMessage());
+                    JSONObject listing = arr.getJSONObject(0);
+                    cartInt.add(cart.getInt(i - 1));
+                    Global.io.print("Item " + i + ":\t\t$" + listing.get("cost") + "\t\t\t" + listing.getString("name"));
+                    total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
+                }
+                save = BigDecimal.valueOf(total*.15).floatValue();
+            }
+            System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
+            System.out.format("\nYou could save $%.2f on this purchase if you join CongoPrime\n\n", save);
+        } catch (Exception e) {
+
+        }
+    }
+
+    public void congoCartPrint(JSONObject user, ArrayList<Integer> cartInt) {
+        try {
+            JSONArray cart = user.getJSONArray("cart");
+            JSONArray orders = user.getJSONArray("orders");
+            Global.io.print("Cart\t\tPrice\t\t\tItem\n-------------------------------------------------------------------");
+            float total = 0;
+            float saved = 0;
+            if (cart.length() == 0) {
+                Global.io.print("Cart is empty");
+            } else {
+                for (int i = 1; i <= cart.length(); i++) {
+                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i - 1)).getMessage());
+                    JSONObject listing = arr.getJSONObject(0);
+                    cartInt.add(cart.getInt(i - 1));
+                    System.out.format("Item %d:\t\t$%.2f\t\t\t%s%n", i, (listing.getDouble("cost")*.85), listing.getString("name"));
+                    total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
+                }
+                saved = BigDecimal.valueOf(total*.15).floatValue();
+                total = BigDecimal.valueOf(total*.85).floatValue();
+            }
+            System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
+            System.out.format("\nYou're saving $%.2f on this purchase thanks to CongoPrime\n\n", saved);
+        } catch (Exception e) {
+
+        }
+    }
+
     /**
      * displays what is currently in the cart
      */
     public Response viewCart() {
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
-            JSONArray cart = user.getJSONArray("cart");
             ArrayList<Integer> cartInt = new ArrayList<>();
-            JSONArray orders = user.getJSONArray("orders");
-
             // checks contents of the cart and displays items and prices, as well as total price
-            Global.io.print("Cart\t\tPrice\t\t\tItem\n-------------------------------------------------------------------");
-            float total = 0;
-            if(cart.length() == 0) {
-                Global.io.print("Cart is empty");
+            if (user.getInt("congo") == 0) {
+                cartPrint(user, cartInt);
             } else {
-                for (int i = 1; i <= cart.length(); i++) {
-                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i-1)).getMessage());
-                    JSONObject listing = arr.getJSONObject(0);
-                    cartInt.add(cart.getInt(i-1));
-                    Global.io.print("Item " + i + ":\t\t$" + listing.get("cost") + "\t\t\t" + listing.getString("name"));
-                    total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
-                }
+                congoCartPrint(user, cartInt);
             }
-            Global.io.print("-------------------------------------------------------------------\nTotal: $" + total + "\n");
-            Global.io.print(user.toString());
             Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
             String answer = Global.io.inlineQuestion("$");
 
@@ -363,6 +404,8 @@ public class BuyerController extends Controller {
                     user.remove("categories");
                     user.put("categories", newCategories);
 
+                    // add rewards for congo members
+
                     //get the maximum delivery date
                     DateFormat format = new SimpleDateFormat("dd-hh", Locale.ENGLISH);
                     Date tmpDate = format.parse(listing[0].maxDelivery);
@@ -391,6 +434,8 @@ public class BuyerController extends Controller {
         }
         return new Response("Left cart...");
     }
+
+
 
     /**
      * adds an item to the users cart
