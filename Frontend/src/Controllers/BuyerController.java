@@ -44,7 +44,13 @@ public class BuyerController extends Controller {
                 case "recommendation":
                     return getRecommendation();
                 case "checkprime":
-                    return getPrimeStatus();
+                    return checkPrimeStatus();
+                case "checkrewards":
+                    if (getPrimeStatus() == 1) {
+                        return checkRewards();
+                    } else {
+                        return super.execute(command);
+                    }
                 case "manageprime":
                     return managePrime();
                 case "flaglisting":
@@ -74,6 +80,9 @@ public class BuyerController extends Controller {
         Global.io.print("recommendation:\t\t\tget a product recommendation");
         Global.io.print("checkPrime:\t\t\t\tcheck if you are currently a member of Congo Prime");
         Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
+        if (getPrimeStatus() == 1) {
+            Global.io.print("checkRewards:\t\t\tcheck what rewards you have earned as a Congo Prime member");
+        }
         Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
         Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
         return super.menu();
@@ -305,7 +314,10 @@ public class BuyerController extends Controller {
         }
     }
 
-    public void cartPrint(JSONObject user, ArrayList<Integer> cartInt) {
+    /**
+     * Helper function to print the cart for normal members
+     */
+    public float cartPrint(JSONObject user, ArrayList<Integer> cartInt) {
         try {
             JSONArray cart = user.getJSONArray("cart");
             JSONArray orders = user.getJSONArray("orders");
@@ -326,12 +338,16 @@ public class BuyerController extends Controller {
             }
             System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
             System.out.format("\nYou could save $%.2f on this purchase if you join CongoPrime\n\n", save);
+            return total;
         } catch (Exception e) {
-
+            return 0;
         }
     }
 
-    public void congoCartPrint(JSONObject user, ArrayList<Integer> cartInt) {
+    /**
+     * Helper function to print the cart for Prime members
+     */
+    public float congoCartPrint(JSONObject user, ArrayList<Integer> cartInt) {
         try {
             JSONArray cart = user.getJSONArray("cart");
             JSONArray orders = user.getJSONArray("orders");
@@ -353,8 +369,9 @@ public class BuyerController extends Controller {
             }
             System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
             System.out.format("\nYou're saving $%.2f on this purchase thanks to CongoPrime\n\n", saved);
+            return total;
         } catch (Exception e) {
-
+            return 0;
         }
     }
 
@@ -365,11 +382,18 @@ public class BuyerController extends Controller {
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             ArrayList<Integer> cartInt = new ArrayList<>();
+            float total;
+
+            // congoPrime
+            double thisPurchase = 0;
+            double points = user.getDouble("primePoints");
+            double rewards = user.getDouble("rewardsCash");
+
             // checks contents of the cart and displays items and prices, as well as total price
             if (user.getInt("congo") == 0) {
-                cartPrint(user, cartInt);
+                total = cartPrint(user, cartInt);
             } else {
-                congoCartPrint(user, cartInt);
+                total = congoCartPrint(user, cartInt);
             }
             Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
             String answer = Global.io.inlineQuestion("$");
@@ -405,6 +429,15 @@ public class BuyerController extends Controller {
                     user.put("categories", newCategories);
 
                     // add rewards for congo members
+                    if (user.getInt("congo") == 1) {
+                        thisPurchase = BigDecimal.valueOf(total).doubleValue() * .10;
+                        points += thisPurchase;
+                        rewards += thisPurchase;
+                        user.remove("primePoints");
+                        user.remove("rewardsCash");
+                        user.put("primePoints", points);
+                        user.put("rewardsCash", rewards);
+                    }
 
                     //get the maximum delivery date
                     DateFormat format = new SimpleDateFormat("dd-hh", Locale.ENGLISH);
@@ -426,10 +459,12 @@ public class BuyerController extends Controller {
                     Global.sendPost("/order", new Gson().toJson(order));
                 }
                 Global.sendPatch("/buyer", new Gson().toJson(buyer));
+                if (user.getInt("congo") == 1) {
+                    System.out.format("You earned %.2f rewards cash on this purchase%n", thisPurchase);
+                }
                 return new Response("Purchase Successful");
             }
         } catch(Exception e) {
-            e.printStackTrace();
             return new Response("The view cart query failed", Status.ERROR);
         }
         return new Response("Left cart...");
@@ -579,7 +614,7 @@ public class BuyerController extends Controller {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+
         }
 
         return results;
@@ -640,7 +675,7 @@ public class BuyerController extends Controller {
         }
     }
 
-    public Response getPrimeStatus() {
+    public Response checkPrimeStatus() {
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             int congo = user.getInt("congo");
@@ -651,6 +686,16 @@ public class BuyerController extends Controller {
             }
         } catch (Exception e) {
             return new Response("Failed to fetch Prime status");
+        }
+    }
+
+    public int getPrimeStatus() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            int congo = user.getInt("congo");
+            return congo;
+        } catch (Exception e) {
+            return 0;
         }
     }
 
@@ -686,6 +731,18 @@ public class BuyerController extends Controller {
             }
         } catch (Exception e) {
             return new Response("Failed to properly manage Prime registration");
+        }
+    }
+
+    public Response checkRewards() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            double points = user.getDouble("primePoints");
+            double rewards = user.getDouble("rewardsCash");
+            System.out.format("You currently have $%.2f in rewards cash%n%nYou have earned a total of $%.2f to date%n", rewards, points);
+            return new Response("");
+        } catch (Exception e) {
+            return new Response("Failed to fetch rewards");
         }
     }
 
