@@ -87,7 +87,7 @@ public class BuyerController extends Controller {
         }
         Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
         Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
-        Global.io.print("viewOrders:\t\tview the current orders of your account");
+        Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
         return super.menu();
     }
 
@@ -436,17 +436,6 @@ public class BuyerController extends Controller {
                     user.remove("categories");
                     user.put("categories", newCategories);
 
-                    // add rewards for congo members
-                    if (user.getInt("congo") == 1) {
-                        thisPurchase = BigDecimal.valueOf(total).doubleValue() * .10;
-                        points += thisPurchase;
-                        rewards += thisPurchase;
-                        user.remove("primePoints");
-                        user.remove("rewardsCash");
-                        user.put("primePoints", points);
-                        user.put("rewardsCash", rewards);
-                    }
-
                     //get the maximum delivery date
                     DateFormat format = new SimpleDateFormat("dd-hh", Locale.ENGLISH);
                     Date tmpDate = format.parse(listing[0].maxDelivery);
@@ -469,6 +458,14 @@ public class BuyerController extends Controller {
                     Global.sendPatch("/buyer", user.toString());
                 }
                 if (user.getInt("congo") == 1) {
+                    thisPurchase = BigDecimal.valueOf(total).doubleValue() * .10;
+                    points += thisPurchase;
+                    rewards += thisPurchase;
+                    user.remove("primePoints");
+                    user.remove("rewardsCash");
+                    user.put("primePoints", points);
+                    user.put("rewardsCash", rewards);
+                    Global.sendPatch("/buyer", user.toString());
                     System.out.format("You earned %.2f rewards cash on this purchase%n", thisPurchase);
                 }
                 return new Response("Purchase Successful");
@@ -538,7 +535,7 @@ public class BuyerController extends Controller {
     public Response getPurchaseRecommendation(){
         ArrayList<JSONObject> options = getAllOfCategory(weightedCategoryPicker());
         if (options.size() == 0) {
-            return new Response("There are no items available in that category");
+            return new Response("You have not made any purchases");
         }
         int r = ThreadLocalRandom.current().nextInt(0, options.size());
         JSONObject result = options.get(r);
