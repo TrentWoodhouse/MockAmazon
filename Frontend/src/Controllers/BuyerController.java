@@ -25,6 +25,7 @@ public class BuyerController extends Controller {
         String[] exArr = command.trim().split("\\s+");
         try {
             //Global.io.print(getNotifications().getMessage());
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             switch(exArr[0].toLowerCase()) {
                 case "menu":
                     return menu();
@@ -37,17 +38,27 @@ public class BuyerController extends Controller {
                 case "search":
                     return searchProducts();
                 case "viewcart":
-                    return viewCart();
+                        return viewCart();
                 case "reportorder":
                     return reportOrder();
                 case "recommendation":
                     return getRecommendation();
+                case "checkprime":
+                    return checkPrimeStatus();
+                case "checkrewards":
+                    if (getPrimeStatus() == 1) {
+                        return checkRewards();
+                    } else {
+                        return super.execute(command);
+                    }
                 case "manageprime":
                     return managePrime();
                 case "flaglisting":
                     return flagListing();
                 case "checkcredibility":
                     return checkCredibility();
+                case "vieworders":
+                    return viewOrders();
                 default:
                     return super.execute(command);
             }
@@ -69,9 +80,14 @@ public class BuyerController extends Controller {
         Global.io.print("viewCart:\t\t\t\tview all items in your cart");
         Global.io.print("reportOrder:\t\t\treport one of your active orders");
         Global.io.print("recommendation:\t\t\tget a product recommendation");
+        Global.io.print("checkPrime:\t\t\t\tcheck if you are currently a member of Congo Prime");
         Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
+        if (getPrimeStatus() == 1) {
+            Global.io.print("checkRewards:\t\t\tcheck what rewards you have earned as a Congo Prime member");
+        }
         Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
-        Global.io.print("checkCredibility:\t\t\tcheck your standing with the Congo community");
+        Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
+        Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
         return super.menu();
     }
 
@@ -305,23 +321,22 @@ public class BuyerController extends Controller {
     }
 
     /**
-     * displays what is currently in the cart
+     * Helper function to print the cart for normal members
      */
-    public Response viewCart() {
+    public float cartPrint(JSONObject user, ArrayList<Integer> cartInt) {
         try {
-            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             JSONArray cart = user.getJSONArray("cart");
-            ArrayList<Integer> cartInt = new ArrayList<>();
             JSONArray orders = user.getJSONArray("orders");
 
             // checks contents of the cart and displays items and prices, as well as total price
             Global.io.print("Cart\t\tPrice\t\t\tItem\t\t\tSale\t\t\tFinal\n-------------------------------------------------------------------");
             float total = 0;
-            if(cart.length() == 0) {
+            float save = 0;
+            if (cart.length() == 0) {
                 Global.io.print("Cart is empty");
             } else {
                 for (int i = 1; i <= cart.length(); i++) {
-                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i-1)).getMessage());
+                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i - 1)).getMessage());
                     JSONObject listing = arr.getJSONObject(0);
                     JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("id")).getMessage());
                     double sale = listing.getDouble("salePercentage") != 1 ? listing.getDouble("salePercentage") : seller.getDouble("salePercentage");
@@ -331,19 +346,82 @@ public class BuyerController extends Controller {
                     Global.io.print("Item " + i + ":\t\t$" + listing.get("cost") + "\t\t\t" + listing.getString("name") + "\t\t" + saleText + "\t\t\t$" + actualCost);
                     total += BigDecimal.valueOf(actualCost).floatValue();
                 }
+                save = BigDecimal.valueOf(total*.15).floatValue();
             }
-            Global.io.print("-------------------------------------------------------------------\nTotal: $" + total + "\n");
-            Global.io.print(user.toString());
+            System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
+            System.out.format("\nYou could save $%.2f on this purchase if you join CongoPrime\n\n", save);
+            return total;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Helper function to print the cart for Prime members
+     */
+    public float congoCartPrint(JSONObject user, ArrayList<Integer> cartInt) {
+        try {
+            JSONArray cart = user.getJSONArray("cart");
+            JSONArray orders = user.getJSONArray("orders");
+            Global.io.print("Cart\t\tPrice\t\t\tItem\n-------------------------------------------------------------------");
+            float total = 0;
+            float saved = 0;
+            if (cart.length() == 0) {
+                Global.io.print("Cart is empty");
+            } else {
+                for (int i = 1; i <= cart.length(); i++) {
+                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i - 1)).getMessage());
+                    JSONObject listing = arr.getJSONObject(0);
+                    cartInt.add(cart.getInt(i - 1));
+                    System.out.format("Item %d:\t\t$%.2f\t\t\t%s%n", i, (listing.getDouble("cost")*.85), listing.getString("name"));
+                    total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
+                }
+                saved = BigDecimal.valueOf(total*.15).floatValue();
+                total = BigDecimal.valueOf(total*.85).floatValue();
+            }
+            System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
+            System.out.format("\nYou're saving $%.2f on this purchase thanks to CongoPrime\n\n", saved);
+            return total;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * displays what is currently in the cart
+     */
+    public Response viewCart() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            ArrayList<Integer> cartInt = new ArrayList<>();
+            float total;
+
+            // congoPrime
+            double thisPurchase = 0;
+            double points = user.getDouble("primePoints");
+            double rewards = user.getDouble("rewardsCash");
+
+            // checks contents of the cart and displays items and prices, as well as total price
+            if (user.getInt("congo") == 0) {
+                total = cartPrint(user, cartInt);
+            } else {
+                total = congoCartPrint(user, cartInt);
+            }
             Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
             String answer = Global.io.inlineQuestion("$");
 
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
-                Buyer buyer = new Gson().fromJson(user.toString(), Buyer.class);
                 for (int i = 0; i < cartInt.size(); i++) {
                     Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage(), Listing[].class);
-                    buyer.credibility = (float) Math.min(buyer.credibility+0.2, 5.0);
-                    buyer.balance -= listing[0].cost;
+                    float cred = Float.parseFloat(String.valueOf(user.get("credibility")));
+                    float balance = Float.parseFloat(String.valueOf(user.get("balance")));
+                    user.remove("credibility");
+                    user.remove("balance");
+                    balance -= listing[0].cost;
+                    cred = (float) Math.min(cred+0.2, 5.0);
+                    user.put("credibility", cred);
+                    user.put("balance", balance);
 
                     // add order to buyer
                     ArrayList<Integer> newCart = new ArrayList<>();
@@ -377,16 +455,28 @@ public class BuyerController extends Controller {
                     c.add(Calendar.HOUR, tmpDate.getHours());
                     date = c.getTime();
 
+                    //set order fields
                     Order order = new Order();
                     order.id = 0;
                     order.endDate = date.toString();
                     order.listings = new ArrayList<>();
                     order.listings.add(cartInt.get(i));
 
-                    Global.sendPatch("/buyer", user.toString()).getMessage();
                     Global.sendPost("/order", new Gson().toJson(order));
+                    //buyer.orders.add(orderID);
+                    Global.sendPatch("/buyer", user.toString());
                 }
-                Global.sendPatch("/buyer", new Gson().toJson(buyer));
+                if (user.getInt("congo") == 1) {
+                    thisPurchase = BigDecimal.valueOf(total).doubleValue() * .10;
+                    points += thisPurchase;
+                    rewards += thisPurchase;
+                    user.remove("primePoints");
+                    user.remove("rewardsCash");
+                    user.put("primePoints", points);
+                    user.put("rewardsCash", rewards);
+                    Global.sendPatch("/buyer", user.toString());
+                    System.out.format("You earned %.2f rewards cash on this purchase%n", thisPurchase);
+                }
                 return new Response("Purchase Successful");
             }
         } catch(Exception e) {
@@ -395,6 +485,8 @@ public class BuyerController extends Controller {
         }
         return new Response("Left cart...");
     }
+
+
 
     /**
      * adds an item to the users cart
@@ -446,10 +538,13 @@ public class BuyerController extends Controller {
         return "";
     }
 
+    /**
+     * Helper function that implements a recommendation based on previous purchase history
+     */
     public Response getPurchaseRecommendation(){
         ArrayList<JSONObject> options = getAllOfCategory(weightedCategoryPicker());
         if (options.size() == 0) {
-            return new Response("There are no items available in that category");
+            return new Response("You have not made any purchases");
         }
         int r = ThreadLocalRandom.current().nextInt(0, options.size());
         JSONObject result = options.get(r);
@@ -535,7 +630,7 @@ public class BuyerController extends Controller {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+
         }
 
         return results;
@@ -596,11 +691,75 @@ public class BuyerController extends Controller {
         }
     }
 
+    public Response checkPrimeStatus() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            int congo = user.getInt("congo");
+            if (congo == 0 ) {
+                return new Response("You are not currently a Congo Prime member");
+            } else {
+                return new Response("You are a Congo Prime member");
+            }
+        } catch (Exception e) {
+            return new Response("Failed to fetch Prime status");
+        }
+    }
+
+    public int getPrimeStatus() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            int congo = user.getInt("congo");
+            return congo;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     /**
      * Allows the user to register or unregister for Congo Prime
      */
-    private Response managePrime() {
-        return new Response("");
+    public Response managePrime() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            int congo = user.getInt("congo");
+            if (congo == 0) {
+                String choice = Global.io.inlineQuestion("Would you like to register for Congo Prime? (y/n)\n");
+                if (choice.equalsIgnoreCase("y")) {
+                    congo = 1;
+                    user.remove("congo");
+                    user.put("congo", congo);
+                    Global.sendPatch("/buyer", user.toString());
+                    return new Response("You have been registered for Congo Prime");
+                } else {
+                    return new Response("You have not been registered for Congo Prime");
+                }
+            } else {
+                String choice = Global.io.inlineQuestion("Would you like to unregister for Congo Prime? (y/n)\n");
+                if (choice.equalsIgnoreCase("y")) {
+                    congo = 0;
+                    user.remove("congo");
+                    user.put("congo", congo);
+                    Global.sendPatch("/buyer", user.toString());
+                    return new Response("You have been unregistered for Congo Prime");
+                } else {
+                    return new Response("You have not been unregistered for Congo Prime");
+                }
+            }
+        } catch (Exception e) {
+            return new Response("Failed to properly manage Prime registration");
+        }
+    }
+
+    public Response checkRewards() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            double points = user.getDouble("primePoints");
+            double rewards = user.getDouble("rewardsCash");
+            System.out.format("You currently have $%.2f in rewards cash%n%nYou have earned a total of $%.2f to date%n", rewards, points);
+            return new Response("");
+        } catch (Exception e) {
+            return new Response("Failed to fetch rewards");
+        }
     }
 
     public Response reportOrder(){
@@ -675,7 +834,21 @@ public class BuyerController extends Controller {
         return new Response("Your Credibility is:" + cred);
     }
 
-    public Response getNotifications(){
+    public Response viewOrders(){
+        Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id="+Global.currUser.id).getMessage(), Buyer.class);
+
+        for(int i : buyer.orders){
+            Order order = new Gson().fromJson(Global.sendGet("/order?id="+i).getMessage(), Order.class);
+            Global.io.print("------------------------------------------");
+            Global.io.print("id: " + order.id);
+            Global.io.print("End Date: " + order.endDate);
+            Global.io.print("Listings: " + order.listings);
+            Global.io.print("------------------------------------------");
+        }
+        return new Response("");
+    }
+
+    public static Response getNotifications(){
         try {
             JSONArray deliveryReports = new JSONArray(Global.sendGet("/deliveryReport?buyer=" + Global.currUser.id).getMessage());
             if(deliveryReports.length() > 0) return new Response(deliveryReports.length() + " reports have been resolved");
