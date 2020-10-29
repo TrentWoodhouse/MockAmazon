@@ -42,6 +42,8 @@ public class BuyerController extends Controller {
                     return reportOrder();
                 case "recommendation":
                     return getRecommendation();
+                case "checkprime":
+                    return getPrimeStatus();
                 case "manageprime":
                     return managePrime();
                 case "flaglisting":
@@ -69,9 +71,10 @@ public class BuyerController extends Controller {
         Global.io.print("viewCart:\t\t\t\tview all items in your cart");
         Global.io.print("reportOrder:\t\t\treport one of your active orders");
         Global.io.print("recommendation:\t\t\tget a product recommendation");
+        Global.io.print("checkPrime:\t\t\t\tcheck if you are currently a member of Congo Prime");
         Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
         Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
-        Global.io.print("checkCredibility:\t\t\tcheck your standing with the Congo community");
+        Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
         return super.menu();
     }
 
@@ -439,6 +442,9 @@ public class BuyerController extends Controller {
         return "";
     }
 
+    /**
+     * Helper function that implements a recommendation based on previous purchase history
+     */
     public Response getPurchaseRecommendation(){
         ArrayList<JSONObject> options = getAllOfCategory(weightedCategoryPicker());
         if (options.size() == 0) {
@@ -589,11 +595,53 @@ public class BuyerController extends Controller {
         }
     }
 
+    public Response getPrimeStatus() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            int congo = user.getInt("congo");
+            if (congo == 0 ) {
+                return new Response("You are not currently a Congo Prime member");
+            } else {
+                return new Response("You are a Congo Prime member");
+            }
+        } catch (Exception e) {
+            return new Response("Failed to fetch Prime status");
+        }
+    }
+
     /**
      * Allows the user to register or unregister for Congo Prime
      */
-    private Response managePrime() {
-        return new Response("");
+    public Response managePrime() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            int congo = user.getInt("congo");
+            if (congo == 0) {
+                String choice = Global.io.inlineQuestion("Would you like to register for Congo Prime? (y/n)\n");
+                if (choice.equalsIgnoreCase("y")) {
+                    congo = 1;
+                    user.remove("congo");
+                    user.put("congo", congo);
+                    Global.sendPatch("/buyer", user.toString());
+                    return new Response("You have been registered for Congo Prime");
+                } else {
+                    return new Response("You have not been registered for Congo Prime");
+                }
+            } else {
+                String choice = Global.io.inlineQuestion("Would you like to unregister for Congo Prime? (y/n)\n");
+                if (choice.equalsIgnoreCase("y")) {
+                    congo = 0;
+                    user.remove("congo");
+                    user.put("congo", congo);
+                    Global.sendPatch("/buyer", user.toString());
+                    return new Response("You have been unregistered for Congo Prime");
+                } else {
+                    return new Response("You have not been unregistered for Congo Prime");
+                }
+            }
+        } catch (Exception e) {
+            return new Response("Failed to properly manage Prime registration");
+        }
     }
 
     public Response reportOrder(){
