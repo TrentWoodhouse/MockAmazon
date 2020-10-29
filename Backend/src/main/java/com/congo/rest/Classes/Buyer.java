@@ -6,4 +6,5 @@ public class Buyer extends User {
 	public ArrayList<Integer> cart;
 	public ArrayList<Integer> orders;
 	public ArrayList<Integer> ratings;
+	public ArrayList<Integer> categories;
 }

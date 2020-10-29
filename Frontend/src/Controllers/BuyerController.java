@@ -13,6 +13,8 @@ import java.util.Date;
 import org.json.JSONArray;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
+
 import com.google.gson.Gson;
 
 
@@ -38,6 +40,8 @@ public class BuyerController extends Controller {
                     return viewCart();
                 case "reportorder":
                     return reportOrder();
+                case "recommendation":
+                    return getRecommendation();
                 default:
                     return super.execute(command);
             }
@@ -55,9 +59,10 @@ public class BuyerController extends Controller {
         Global.io.print("giveFeedback:\t\t\tgive feedback on a particular listing");
         Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
-        Global.io.print("search:\t\t\t\tsearch available product listings");
-        Global.io.print("viewCart:\t\t\tview all items in your cart");
+        Global.io.print("search:\t\t\t\t\tsearch available product listings");
+        Global.io.print("viewCart:\t\t\t\tview all items in your cart");
         Global.io.print("reportOrder:\t\t\treport one of your active orders");
+        Global.io.print("recommendation:\t\t\tget a product recommendation");
         return super.menu();
     }
 
@@ -251,7 +256,7 @@ public class BuyerController extends Controller {
             JSONArray orders = user.getJSONArray("orders");
 
             // checks contents of the cart and displays items and prices, as well as total price
-            Global.io.print("Cart\n----------");
+            Global.io.print("Cart\t\tPrice\t\t\tItem\n-------------------------------------------------------------------");
             float total = 0;
             if(cart.length() == 0) {
                 Global.io.print("Cart is empty");
@@ -260,11 +265,11 @@ public class BuyerController extends Controller {
                     JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i-1)).getMessage());
                     JSONObject listing = arr.getJSONObject(0);
                     cartInt.add(cart.getInt(i-1));
-                    Global.io.print("Item " + i + ": " + listing.getString("name") + ", $" + listing.get("cost"));
+                    Global.io.print("Item " + i + ":\t\t$" + listing.get("cost") + "\t\t\t" + listing.getString("name"));
                     total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
                 }
             }
-            Global.io.print("----------\nTotal: $" + total + "\n");
+            Global.io.print("-------------------------------------------------------------------\nTotal: $" + total + "\n");
             Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
             String answer = Global.io.inlineQuestion("$");
 
@@ -305,6 +310,100 @@ public class BuyerController extends Controller {
             return new Response("Item added to your cart");
         } catch(Exception e) {
             return new Response("The add to cart query failed", Status.ERROR);
+        }
+    }
+
+    public Response getPurchaseRecommendation(){
+        return new Response("");
+    }
+
+    public String getCategory(String choice) {
+        if (choice.equals("1")) {
+            return "apparel";
+        } else if (choice.equals("2")) {
+            return "beauty/personal care";
+        } else if (choice.equals("3")) {
+            return "electronics";
+        } else if (choice.equals("4")) {
+            return "entertainment";
+        } else if (choice.equals("5")) {
+            return "food products";
+        } else if (choice.equals("6")) {
+            return "furniture";
+        } else if (choice.equals("7")) {
+            return "household products";
+        } else if (choice.equals("8")) {
+            return "toys/games";
+        } else if (choice.equals("9")) {
+            return "miscellaneous";
+        } else {
+            return getCategory(Global.io.inlineQuestion("Please enter a valid choice: "));
+        }
+    }
+
+    public ArrayList<JSONObject> getAllOfCategory(String category) {
+        ArrayList<JSONObject> results = new ArrayList<>();
+        try {
+            JSONArray listings = new JSONArray(Global.sendGet("/listing?all=xyz").getMessage());
+            for (int i = 0; i < listings.length(); i++) {
+                JSONObject temp = listings.getJSONObject(i);
+                if (temp.getString("category").equalsIgnoreCase(category)) {
+                    results.add(listings.getJSONObject(i));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return results;
+    }
+
+    public Response getCategoryRecommendation() {
+        Global.io.print("Choose on of the following: (Enter the corresponding number)" +
+                "\n1. Apparel\t\t\t\t\tClothing, Shoes, Accessories, etc." +
+                "\n2. Beauty/Personal Cart\t\tMakeup, Shampoo, Deodorant, etc." +
+                "\n3. Electronics\t\t\t\tComputers, Phones, Cameras, etc." +
+                "\n4. Entertainment\t\t\tMovies, Video Games, Books, etc." +
+                "\n5. Food Products\t\t\tGroceries, Baking supplies, etc." +
+                "\n6. Furniture\t\t\t\tCouches, Desks, Mattresses, etc." +
+                "\n7. Household Products\t\tCleaning supplies, Tools, Dishes, etc." +
+                "\n8. Toys/Games\t\t\t\tBoard Games, Legos, Dolls, etc." +
+                "\n9. Miscellaneous\t\t\tAnything that doesn't fit one of the 8 main categories");
+        String choice = getCategory(Global.io.inlineQuestion(""));
+        ArrayList<JSONObject> options = getAllOfCategory(choice);
+        if (options.size() == 0) {
+            return new Response("There are no items available in that category");
+        }
+        int r = ThreadLocalRandom.current().nextInt(0, options.size());
+        JSONObject result = options.get(r);
+        try {
+            Global.io.print("Item:\t\t\t" + result.getString("name") +
+                    "\nDescription:\t" + result.getString("description") +
+                    "\nPrice:\t\t\t" + result.getDouble("cost"));
+            choice = Global.io.inlineQuestion("Would you like to add this item to you cart? (y/n)\n");
+            if (choice.equalsIgnoreCase("y")) {
+                return addToCart(result.getInt("id"));
+            } else {
+                return new Response("Item was not added to the cart");
+            }
+        } catch (Exception e) {
+            return new Response("Error generating recommendation");
+        }
+    }
+
+    public Response getRecommendation() {
+        try {
+            JSONObject buyer = new JSONObject(Global.sendGet("/buyer?id=" + Global.currUser.id));
+            String choice = Global.io.inlineQuestion("Chose one of the following: (Enter the corresponding number)" +
+                    "\n1.Get a recommendation based on previous purchases" +
+                    "\n2.Get a recommendation by choosing a category\n");
+            if (choice.equals("1")) {
+                return getPurchaseRecommendation();
+            } else {
+                return getCategoryRecommendation();
+            }
+        } catch (Exception e) {
+            return new Response("");
         }
     }
 
