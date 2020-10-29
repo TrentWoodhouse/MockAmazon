@@ -20,5 +20,7 @@ public class Buyer extends User {
 		int i = 0;
 		while (i < 9) {categories.add(0); i++;}
 		congo = 0;
+		primePoints = 0;
+		rewardsCash = 0;
 	}
 }
