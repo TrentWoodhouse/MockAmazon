@@ -40,7 +40,7 @@ public class OrderController {
 	}
 
 	@PostMapping("/order")
-	public String postOrder(@RequestBody Order order) {
+	public long postOrder(@RequestBody Order order) {
 
 		if (orders == null) {
 			scanJsonFile();
@@ -48,7 +48,7 @@ public class OrderController {
 		}
 		for(Order o : orders) {
 			if (o.id == order.id) {
-				return "Failed to send Order (incorrect ID)";
+				return 0;
 			}
 		}
 
@@ -63,12 +63,12 @@ public class OrderController {
 			writer.write(new Gson().toJson(orders));
 			writer.close();
 
-			return "Successfully Sent Order";
+			return order.id;
 		} catch (Exception e){
 			System.out.println(e);
 		}
 
-		return "Failed to Send Order";
+		return 0;
 	}
 
 	private void scanJsonFile(){
