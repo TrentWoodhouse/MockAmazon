@@ -7,10 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 @RestController
 public class FlagController {
@@ -30,11 +27,20 @@ public class FlagController {
 			}
 		}
 
+		if (input.containsKey("most")) {
+			long mostPopular = findPopular();
+			ArrayList<Flag> popularFlags = new ArrayList<>();
+			for(Flag f : flags){
+				if(f.listing == mostPopular) popularFlags.add(f);
+			}
+			return popularFlags;
+		}
+
 		ArrayList<Flag> flagList = new ArrayList<Flag>();
 		//find the specified flag (or all)
 		if(input.containsKey("all")) return flags;
 		for(Flag f : flags){
-			if((input.containsKey("id") && f.id == Long.parseLong(input.get("id"))) || (input.containsKey("listing") && f.listing == Long.getLong(input.get("listing")))){
+			if((input.containsKey("id") && f.id == Long.parseLong(input.get("id"))) || (input.containsKey("listing") && f.listing == Long.parseLong(input.get("listing")))){
 				flagList.add(f);
 			}
 		}
@@ -135,12 +141,47 @@ public class FlagController {
 		}
 
 		//find the specified flag (or all)
-		for(Flag f : flags){
-			if((input.containsKey("id") && f.id == Long.parseLong(input.get("id"))) || (input.containsKey("listing") && f.listing == Long.getLong(input.get("listing")))){
-				flags.remove(f);
-			}
+		flags.removeIf(f -> (input.containsKey("id") && f.id == Long.parseLong(input.get("id"))) || (input.containsKey("listing") && f.listing == Long.getLong(input.get("listing"))));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!flagFile.exists()) flagFile.createNewFile();
+			FileWriter writer = new FileWriter(flagFile);
+			writer.write(new Gson().toJson(flags));
+			writer.close();
+
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;
+	}
+
+	public long findPopular() {
+
+		if (flags == null || flags.size() == 0) return 0;
+
+		Collections.sort(flags);
+
+		long previous = flags.get(0).listing;
+		long popular = flags.get(0).listing;
+		int count = 1;
+		int maxCount = 1;
+
+		for (int i = 1; i < flags.size(); i++) {
+			if (flags.get(i).listing == previous)
+				count++;
+			else {
+				if (count > maxCount) {
+					popular = flags.get(i-1).listing;
+					maxCount = count;
+				}
+				previous = flags.get(i).listing;
+				count = 1;
+			}
+		}
+
+		return count > maxCount ? flags.get(flags.size()-1).listing : popular;
+
 	}
 }

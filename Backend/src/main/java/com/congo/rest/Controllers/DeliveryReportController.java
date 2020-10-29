@@ -31,8 +31,10 @@ public class DeliveryReportController {
 
 		ArrayList<DeliveryReport> deliveryReportList = new ArrayList<DeliveryReport>();
 
-		//get any unread reports
+		//get all reports
 		if(input.containsKey("all")) return deliveryReports;
+
+		//get any unread reports
 		if(input.containsKey("allUnread")){
 			ArrayList<DeliveryReport> unreadReports = new ArrayList<>();
 			for(DeliveryReport d : deliveryReports){
@@ -159,10 +161,17 @@ public class DeliveryReportController {
 		}
 
 		//find the specified deliveryReport (or all)
-		for(DeliveryReport d : deliveryReports){
-			if(input.containsKey("id") && d.id == Long.parseLong(input.get("id"))){
-				deliveryReports.remove(d);
-			}
+		deliveryReports.removeIf(d -> input.containsKey("id") && d.id == Long.parseLong(input.get("id")));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!deliveryReportFile.exists()) deliveryReportFile.createNewFile();
+			FileWriter writer = new FileWriter(deliveryReportFile);
+			writer.write(new Gson().toJson(deliveryReports));
+			writer.close();
+
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;

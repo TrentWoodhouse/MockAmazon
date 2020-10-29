@@ -21,6 +21,16 @@ public class AdminController extends Controller {
                     return viewReports();
                 case "reviewreport":
                     return reviewReport();
+                case "flaglisting":
+                    return flagListing();
+                case "listlistings":
+                    return listListings();
+                case "listflags":
+                    return listFlags();
+                case "getmostflags":
+                    return getMostFlags();
+                case "reviewflags":
+                    return reviewFlags();
                 default:
                     return super.execute(command);
             }
@@ -35,7 +45,13 @@ public class AdminController extends Controller {
 
     @Override
     public Response menu() {
-        Global.io.print("reviewReports:\t\t\tresolve active reports");
+        Global.io.print("viewReports:\t\t\tview all active reports");
+        Global.io.print("reviewReport:\t\t\tresolve active reports");
+        Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
+        Global.io.print("listListings:\t\t\tdisplay all listings");
+        Global.io.print("listFlags:\t\t\tlist all flags for a given listing");
+        Global.io.print("getMostFlags:\t\t\tdisplay the most flagged listing's flags");
+        Global.io.print("reviewFlags:\t\t\treview a given listings flags to determine its fate");
         return super.menu();
     }
 
@@ -99,7 +115,9 @@ public class AdminController extends Controller {
             if(response.equals("yes")){
                 buyer.balance += listing.cost;
                 seller.balance -= listing.cost;
-                Global.sendDelete("/orders?id=" + order.id);
+                Global.sendPatch("/buyer", new Gson().toJson(buyer));
+                Global.sendPatch("/seller", new Gson().toJson(seller));
+                Global.sendDelete("/order?id=" + order.id);
             }
             deliveryReport.appealed = true;
 
@@ -107,8 +125,126 @@ public class AdminController extends Controller {
 
             return new Response("Report successfully resolved");
         } catch(Exception e){
-            e.printStackTrace();
             return new Response("Failed to complete response", Status.ERROR);
+        }
+    }
+
+    public Response listListings(){
+        try {
+            Listing[] listings = new Gson().fromJson(Global.sendGet("/listing?all=xyz").getMessage(), Listing[].class);
+            for(Listing l : listings){
+                Global.io.print("------------------------------------------");
+                Global.io.print("id: " + l.id);
+                Global.io.print("Name: " + l.name);
+                Global.io.print("------------------------------------------");
+            }
+
+            return new Response("");
+        } catch(Exception e){
+            return new Response("Failed to list Listings", Status.ERROR);
+        }
+    }
+
+    public Response listFlags(){
+        try {
+            String listingNumber = Global.io.inlineQuestion("What listing's flags do you want to see? (id) - ");
+            Flag[] flags = new Gson().fromJson(Global.sendGet("/flag?listing=" + listingNumber).getMessage(), Flag[].class);
+            for(Flag f : flags){
+                User user = new Gson().fromJson(Global.sendGet("/user?id=" + f.user).getMessage(), User.class);
+                Global.io.print("------------------------------------------");
+                Global.io.print("id: " + f.id);
+                Global.io.print("User: " + user.name);
+                Global.io.print("Reason: " + f.reason);
+                Global.io.print("------------------------------------------");
+            }
+
+            return new Response("");
+        } catch(Exception e){
+            return new Response("Failed to list flags");
+        }
+    }
+
+    public Response getMostFlags(){
+        try {
+            Flag[] flags = new Gson().fromJson(Global.sendGet("/flag?most=xyz").getMessage(), Flag[].class);
+            for(Flag f : flags){
+                User user = new Gson().fromJson(Global.sendGet("/user?id=" + f.user).getMessage(), User.class);
+                Global.io.print("------------------------------------------");
+                Global.io.print("id: " + f.id);
+                Global.io.print("User: " + user.name);
+                Global.io.print("Reason: " + f.reason);
+                Global.io.print("------------------------------------------");
+            }
+
+            Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id=" + flags[flags.length-1].listing).getMessage(), Listing[].class);
+            return new Response("Listing with the most Flags: " + listing[0].name + ", id: " + listing[0].id);
+        } catch(Exception e){
+            return new Response("Failed to list flags");
+        }
+    }
+
+    public Response flagListing(){
+        //make the flag
+        Flag flag = new Flag();
+        flag.id = 0;
+        flag.user = Global.currUser.id;
+        String listingName = Global.io.inlineQuestion("What listing do you want to report? (give the name) - ");
+
+        try{
+            //get the listing id
+            Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?name=" + listingName).getMessage(), Listing[].class);
+
+            flag.listing = listing[0].id;
+            flag.reason = Global.io.inlineQuestion("Why should this listing be removed? - ");
+
+            //send the flag
+            return Global.sendPost("/flag", new Gson().toJson(flag));
+        } catch(Exception e){
+            return new Response("Failed to flag listing", Status.ERROR);
+        }
+    }
+
+    public Response reviewFlags(){
+        try{
+            String listingId = Global.io.inlineQuestion("What listing do you want to review? (give the id) - ");
+            Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id=" + listingId).getMessage(), Listing[].class);
+
+            Global.io.print("-----------------Listing Information---------------------");
+            Global.io.print("Name: " + listing[0].name);
+            Global.io.print("Description: " + listing[0].description);
+            Global.io.print("Cost: " + listing[0].cost);
+            Global.io.print("Maximum Delivery Time (days-hours): " + listing[0].maxDelivery);
+            Global.io.print("------------------------Flags----------------------------");
+            Flag[] flags = new Gson().fromJson(Global.sendGet("/flag?listing=" + listingId).getMessage(), Flag[].class);
+            for(Flag f : flags){
+                User user = new Gson().fromJson(Global.sendGet("/user?id=" + f.user).getMessage(), User.class);
+                Global.io.print("id: " + f.id);
+                Global.io.print("User: " + user.name);
+                Global.io.print("Credibility: " + user.credibility);
+                Global.io.print("Reason: " + f.reason);
+                Global.io.print("------------------------------------------");
+            }
+
+            //complete the Response (refund/no refund)
+            String response = Global.io.inlineQuestion("Remove the listing? (yes or no) - ");
+            if(response.equals("yes")){
+                Global.sendDelete("/listing?id=" + listingId);
+            }
+
+            for(Flag f : flags){
+                User user = new Gson().fromJson(Global.sendGet("/user?id=" + f.user).getMessage(), User.class);
+                if(response.equals("yes")) {
+                    user.credibility = (float) Math.min(user.credibility+0.2, 5.0);
+                } else {
+                    user.credibility = (float) Math.max(user.credibility-0.3, 0.0);
+                }
+                Global.sendPatch("/user", new Gson().toJson(user));
+                Global.sendDelete("/flag?id=" + f.id);
+            }
+
+            return new Response("Completed review successfully");
+        } catch(Exception e){
+            return new Response("Failed to complete Flag", Status.ERROR);
         }
     }
 }

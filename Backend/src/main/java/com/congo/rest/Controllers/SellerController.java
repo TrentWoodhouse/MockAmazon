@@ -101,7 +101,7 @@ public class SellerController {
 				Seller u = sellers.get(i);
 				if (u.id == seller.id || u.name.equals(seller.name)) {
 					sellers.set(i, seller);
-					return "Succeeded In Updating Seller";
+					//return "Succeeded In Updating Seller";
 				}
 			}
 		}
@@ -133,10 +133,17 @@ public class SellerController {
 		}
 
 		//find the specified seller (or all)
-		for(Seller u : sellers){
-			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
-				sellers.remove(u);
-			}
+		sellers.removeIf(u -> (input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name"))));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!sellerFile.exists()) sellerFile.createNewFile();
+			FileWriter writer = new FileWriter(sellerFile);
+			writer.write(new Gson().toJson(sellers));
+			writer.close();
+
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;

@@ -1,1 +1,1 @@
-[{"cart":[1,2],"orders":[1],"ratings":[1,2],"id":1,"name":"Clint","password":"Passer","messages":[1,2,3]},{"cart":[],"orders":[],"ratings":[],"id":2,"name":"Seth","password":"Pass"}]
+[{"cart":[],"orders":[],"ratings":[],"categories":[0,0,1,0,0,0,0,0,0],"id":7,"name":"Seth","password":"Pass","paymentCard":"0","balance":0.0,"credibility":0.0}]

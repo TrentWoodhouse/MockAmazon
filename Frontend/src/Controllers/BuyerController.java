@@ -9,13 +9,11 @@ import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.*;
+
 import org.json.JSONArray;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.Locale;
 
 import com.google.gson.Gson;
 
@@ -46,6 +44,10 @@ public class BuyerController extends Controller {
                     return getRecommendation();
                 case "manageprime":
                     return managePrime();
+                case "flaglisting":
+                    return flagListing();
+                case "checkcredibility":
+                    return checkCredibility();
                 default:
                     return super.execute(command);
             }
@@ -65,10 +67,11 @@ public class BuyerController extends Controller {
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
         Global.io.print("search:\t\t\t\t\tsearch available product listings");
         Global.io.print("viewCart:\t\t\t\tview all items in your cart");
-        Global.io.print("addToCart [id]:\t\t\tadd an item to your cart");
         Global.io.print("reportOrder:\t\t\treport one of your active orders");
         Global.io.print("recommendation:\t\t\tget a product recommendation");
         Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
+        Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
+        Global.io.print("checkCredibility:\t\t\tcheck your standing with the Congo community");
         return super.menu();
     }
 
@@ -323,13 +326,39 @@ public class BuyerController extends Controller {
                 }
             }
             Global.io.print("-------------------------------------------------------------------\nTotal: $" + total + "\n");
+            Global.io.print(user.toString());
             Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
             String answer = Global.io.inlineQuestion("$");
 
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
+                Buyer buyer = new Gson().fromJson(user.toString(), Buyer.class);
                 for (int i = 0; i < cartInt.size(); i++) {
                     Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage(), Listing[].class);
+                    buyer.credibility = (float) Math.min(buyer.credibility+0.2, 5.0);
+                    buyer.balance -= listing[0].cost;
+
+                    // add order to buyer
+                    ArrayList<Integer> newCart = new ArrayList<>();
+                    ArrayList<Integer> newOrders = new ArrayList<>();
+                    JSONArray add = user.getJSONArray("categories");
+                    ArrayList<Integer> newCategories = new ArrayList<>();
+                    for (int j = 0; j < add.length(); j++) {
+                        newCategories.add(add.getInt(j));
+                    }
+                    String category = new JSONArray(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage()).getJSONObject(0).getString("category");
+                    int index = getIndex(category);
+                    newCategories.set(index, newCategories.get(index)+1);
+                    for (int j = 0; j < user.getJSONArray("orders").length(); j++) {
+                        newOrders.add(user.getJSONArray("orders").getInt(j));
+                    }
+                    newOrders.add(cartInt.get(i));
+                    user.remove("cart");
+                    user.remove("orders");
+                    user.put("cart", newCart);
+                    user.put("orders", newOrders);
+                    user.remove("categories");
+                    user.put("categories", newCategories);
 
                     //get the maximum delivery date
                     DateFormat format = new SimpleDateFormat("dd-hh", Locale.ENGLISH);
@@ -347,8 +376,11 @@ public class BuyerController extends Controller {
                     order.listings = new ArrayList<>();
                     order.listings.add(cartInt.get(i));
 
+                    Global.sendPatch("/buyer", user.toString()).getMessage();
                     Global.sendPost("/order", new Gson().toJson(order));
                 }
+                Global.sendPatch("/buyer", new Gson().toJson(buyer));
+                return new Response("Purchase Successful");
             }
         } catch(Exception e) {
             e.printStackTrace();
@@ -382,8 +414,51 @@ public class BuyerController extends Controller {
         }
     }
 
+    /**
+     * Helper function to pick a recommendation category
+     */
+    public String weightedCategoryPicker() {
+        try {
+            JSONArray add = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage()).getJSONArray("categories");
+            ArrayList<Integer> categories = new ArrayList<>();
+            int total = 0;
+            for (int j = 0; j < add.length(); j++) {
+                categories.add(add.getInt(j));
+                total += add.getInt(j);
+            }
+            int r = ThreadLocalRandom.current().nextInt(1, total+1);
+            for (int j = 0; j < categories.size(); j++) {
+                r = r - categories.get(j);
+                if (r <= 0) {
+                    return getCategory(Integer.toString(j+1));
+                }
+            }
+        } catch (Exception e) {
+            return "";
+        }
+        return "";
+    }
+
     public Response getPurchaseRecommendation(){
-        return new Response("");
+        ArrayList<JSONObject> options = getAllOfCategory(weightedCategoryPicker());
+        if (options.size() == 0) {
+            return new Response("There are no items available in that category");
+        }
+        int r = ThreadLocalRandom.current().nextInt(0, options.size());
+        JSONObject result = options.get(r);
+        try {
+            Global.io.print("Item:\t\t\t" + result.getString("name") +
+                    "\nDescription:\t" + result.getString("description") +
+                    "\nPrice:\t\t\t" + result.getDouble("cost"));
+            String choice = Global.io.inlineQuestion("Would you like to add this item to you cart? (y/n)\n");
+            if (choice.equalsIgnoreCase("y")) {
+                return addToCart(result.getInt("id"));
+            } else {
+                return new Response("Item was not added to the cart");
+            }
+        } catch (Exception e) {
+            return new Response("Error generating recommendation");
+        }
     }
 
     /**
@@ -410,6 +485,31 @@ public class BuyerController extends Controller {
             return "miscellaneous";
         } else {
             return getCategory(Global.io.inlineQuestion("Please enter a valid choice: "));
+        }
+    }
+
+    /**
+     * Helper function that converts the category into its corresponding number
+     */
+    public int getIndex(String choice) {
+        if (choice.equals("apparel")) {
+            return 0;
+        } else if (choice.equals("beauty/personal care")) {
+            return 1;
+        } else if (choice.equals("electronics")) {
+            return 2;
+        } else if (choice.equals("entertainment")) {
+            return 3;
+        } else if (choice.equals("food products")) {
+            return 4;
+        } else if (choice.equals("furniture")) {
+            return 5;
+        } else if (choice.equals("household products")) {
+            return 6;
+        } else if (choice.equals("toys/games")) {
+            return 7;
+        } else {
+            return 8;
         }
     }
 
@@ -514,6 +614,8 @@ public class BuyerController extends Controller {
 
                 buyer.balance += listing.cost;
                 seller.balance -= listing.cost;
+                Global.sendPatch("/buyer", new Gson().toJson(buyer));
+                Global.sendPatch("/seller", new Gson().toJson(seller));
                 Global.sendDelete("/order?id=" + order.id);
 
                 return new Response("The order is overdue, a refund has been deposited in your account");
@@ -536,6 +638,34 @@ public class BuyerController extends Controller {
         } catch(Exception e){
             return new Response("Failed to create report", Status.ERROR);
         }
+    }
+
+    public Response flagListing(){
+        //make the flag
+        Flag flag = new Flag();
+        flag.id = 0;
+        flag.user = Global.currUser.id;
+        String listingName = Global.io.inlineQuestion("What listing do you want to report? (give the name) - ");
+
+        if(new Gson().fromJson(Global.sendGet("/user?id=" + Global.currUser.id).getMessage(), User.class).credibility < 2.0) return new Response("Your credibility is too low to flag", Status.ERROR);
+
+        try{
+            //get the listing id
+            Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?name=" + listingName).getMessage(), Listing[].class);
+
+            flag.listing = listing[0].id;
+            flag.reason = Global.io.inlineQuestion("Why should this listing be removed? - ");
+
+            //send the flag
+            return Global.sendPost("/flag", new Gson().toJson(flag));
+        } catch(Exception e){
+            return new Response("Failed to flag listing", Status.ERROR);
+        }
+    }
+
+    public Response checkCredibility(){
+        float cred = new Gson().fromJson(Global.sendGet("/user?id=" + Global.currUser.id).getMessage(), User.class).credibility;
+        return new Response("Your Credibility is:" + cred);
     }
 
     public Response getNotifications(){

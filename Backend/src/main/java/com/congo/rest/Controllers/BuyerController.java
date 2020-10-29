@@ -101,7 +101,7 @@ public class BuyerController {
 				Buyer u = buyers.get(i);
 				if (u.id == buyer.id || u.name.equals(buyer.name)) {
 					buyers.set(i, buyer);
-					return "Succeeded In Updating Buyer";
+					//return "Succeeded In Updating Buyer";
 				}
 			}
 		}
@@ -115,7 +115,7 @@ public class BuyerController {
 
 			return "Successfully Sent Buyer";
 		} catch (Exception e){
-			System.out.println(e);
+			e.printStackTrace();
 		}
 
 		return "Failed to Update Buyer";
@@ -133,10 +133,17 @@ public class BuyerController {
 		}
 
 		//find the specified buyer (or all)
-		for(Buyer u : buyers){
-			if((input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name")))){
-				buyers.remove(u);
-			}
+		buyers.removeIf(u -> (input.containsKey("id") && u.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && u.name.equals(input.get("name"))));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!buyerFile.exists()) buyerFile.createNewFile();
+			FileWriter writer = new FileWriter(buyerFile);
+			writer.write(new Gson().toJson(buyers));
+			writer.close();
+
+		} catch (Exception e){
+			e.printStackTrace();
 		}
 
 		return null;

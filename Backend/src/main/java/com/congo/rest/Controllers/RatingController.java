@@ -101,7 +101,7 @@ public class RatingController {
 				Rating u = ratings.get(i);
 				if (u.id == rating.id) {
 					ratings.set(i, rating);
-					return "Succeeded In Updating Rating";
+					//return "Succeeded In Updating Rating";
 				}
 			}
 		}
@@ -133,10 +133,17 @@ public class RatingController {
 		}
 
 		//find the specified rating (or all)
-		for(Rating r : ratings){
-			if(r.id == Long.parseLong(id)){
-				ratings.remove(r);
-			}
+		ratings.removeIf(r -> r.id == Long.parseLong(id));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!ratingFile.exists()) ratingFile.createNewFile();
+			FileWriter writer = new FileWriter(ratingFile);
+			writer.write(new Gson().toJson(ratings));
+			writer.close();
+
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;

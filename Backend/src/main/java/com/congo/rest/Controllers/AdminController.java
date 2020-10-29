@@ -101,7 +101,7 @@ public class AdminController {
 				Admin a = admins.get(i);
 				if (a.id == admin.id || a.name.equals(admin.name)) {
 					admins.set(i, admin);
-					return "Succeeded In Updating Admin";
+					//return "Succeeded In Updating Admin";
 				}
 			}
 		}
@@ -133,10 +133,17 @@ public class AdminController {
 		}
 
 		//find the specified admin (or all)
-		for(Admin a : admins){
-			if((input.containsKey("id") && a.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && a.name.equals(input.get("name")))){
-				admins.remove(a);
-			}
+		admins.removeIf(a -> (input.containsKey("id") && a.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && a.name.equals(input.get("name"))));
+
+		try {
+			(new File("./storage")).mkdir();
+			if(!adminFile.exists()) adminFile.createNewFile();
+			FileWriter writer = new FileWriter(adminFile);
+			writer.write(new Gson().toJson(admins));
+			writer.close();
+
+		} catch (Exception e){
+			System.out.println(e);
 		}
 
 		return null;
