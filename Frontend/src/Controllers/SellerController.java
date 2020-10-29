@@ -10,6 +10,8 @@ import com.google.gson.JsonObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.Date;
 
 public class SellerController extends Controller {
@@ -109,6 +111,7 @@ public class SellerController extends Controller {
             listing.put("cost", Global.io.inlineQuestion("Cost:"));
             listing.put("seller", Global.currUser.id);
             listing.put("maxDelivery", Global.io.inlineQuestion("Maximum Delivery time (days-hours):"));
+            listing.put("orders", new ArrayList<Integer>());
             String jsonString = listing.toString();
 
             return Global.sendPost("/listing", jsonString);

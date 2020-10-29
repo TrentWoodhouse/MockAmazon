@@ -1,1 +1,1 @@
-[{"id":1,"endDate":"Thu Oct 15 14:24:52 CDT 2020","listings":[1,2]},{"id":2,"endDate":"Thu Oct 15 14:24:52 CDT 2020","listings":[1,2]},{"id":3,"endDate":"Fri Oct 30 02:47:08 CDT 2020","listings":[1]},{"id":4,"endDate":"Mon Nov 02 21:47:08 CST 2020","listings":[2]}]
+[{"id":1,"endDate":"Tue Nov 03 00:01:40 CST 2020","listings":[1]},{"id":2,"endDate":"Tue Nov 03 00:05:54 CST 2020","listings":[1]},{"id":3,"endDate":"Tue Nov 03 00:06:42 CST 2020","listings":[1]},{"id":4,"endDate":"Tue Nov 03 00:09:06 CST 2020","listings":[1]}]

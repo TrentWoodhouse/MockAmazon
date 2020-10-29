@@ -58,7 +58,7 @@ public class Main {
 
                     User tmp;
                     if (role.equals("buyer")) {
-                        tmp = new Buyer(new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>());
+                        tmp = new Buyer(new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>());
                     } else if(role.equals("admin")) {
                         tmp = new User();
                     } else {
