@@ -58,7 +58,7 @@ public class Main {
 
                     User tmp;
                     if (role.equals("buyer")) {
-                        tmp = new Buyer(new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>());
+                        tmp = new Buyer(new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>());
                     } else {
                         tmp = new User();
                     }
@@ -79,9 +79,6 @@ public class Main {
                     for(int i=paymentCard.length()-1 ; i>=0 ; i = i-2){
                         secondSum += Integer.parseInt(paymentCard.charAt(i)+"");
                     }
-                    System.out.println(firstSum);
-                    System.out.println(secondSum);
-                    System.out.println(((firstSum+secondSum) % 10));
                     if(((firstSum+secondSum) % 10) != 0){
                         Global.io.error("Incorrect payment Card");
                         continue;
