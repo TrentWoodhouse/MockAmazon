@@ -42,6 +42,8 @@ public class BuyerController extends Controller {
                     return reportOrder();
                 case "recommendation":
                     return getRecommendation();
+                case "manageprime":
+                    return managePrime();
                 default:
                     return super.execute(command);
             }
@@ -63,6 +65,7 @@ public class BuyerController extends Controller {
         Global.io.print("viewCart:\t\t\t\tview all items in your cart");
         Global.io.print("reportOrder:\t\t\treport one of your active orders");
         Global.io.print("recommendation:\t\t\tget a product recommendation");
+        Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
         return super.menu();
     }
 
@@ -146,9 +149,6 @@ public class BuyerController extends Controller {
 
     /**
      * Helper function to search the JSONArray for matches
-     * @param listings
-     * @param term
-     * @return
      */
     public ArrayList<JSONObject> search(JSONArray listings, String term) {
         ArrayList<JSONObject> results = new ArrayList<>();
@@ -172,44 +172,73 @@ public class BuyerController extends Controller {
         }
     }
 
+    public JSONArray categorySearch() {
+        JSONArray ret = new JSONArray();
+        Global.io.print("Choose on of the following: (Enter the corresponding number)" +
+                "\n1. Apparel\t\t\t\t\tClothing, Shoes, Accessories, etc." +
+                "\n2. Beauty/Personal Cart\t\tMakeup, Shampoo, Deodorant, etc." +
+                "\n3. Electronics\t\t\t\tComputers, Phones, Cameras, etc." +
+                "\n4. Entertainment\t\t\tMovies, Video Games, Books, etc." +
+                "\n5. Food Products\t\t\tGroceries, Baking supplies, etc." +
+                "\n6. Furniture\t\t\t\tCouches, Desks, Mattresses, etc." +
+                "\n7. Household Products\t\tCleaning supplies, Tools, Dishes, etc." +
+                "\n8. Toys/Games\t\t\t\tBoard Games, Legos, Dolls, etc." +
+                "\n9. Miscellaneous\t\t\tAnything that doesn't fit one of the 8 main categories");
+        String choice = getCategory(Global.io.inlineQuestion(""));
+        ArrayList<JSONObject> r = getAllOfCategory(choice);
+        try {
+            for (int i = 0; i < r.size(); i++) {
+                    ret.put(r.get(i));
+            }
+        } catch (Exception e) {
+
+        }
+        return ret;
+    }
+
     /**
      * Helper function to get search results when buyer chooses advanced search
-     * @param listings
-     * @param term
-     * @return
      */
     public ArrayList<JSONObject> advancedSearch(JSONArray listings, String term) {
         JSONArray validListings = new JSONArray();
         try {
-            Global.io.print("Enter one of the following: \"Price less than x\" or \"Price greater than x\"");
+            Global.io.print("Enter one of the following (Enter the corresponding number):" +
+                    "\n1.Price less than x" +
+                    "\n2.Price greater than x" +
+                    "\n3.Category");
             String advanced = Global.io.inlineQuestion("$");
-            Global.io.print("Now enter your x (what the prices should be less than or greater than)");
-            String criteria = Global.io.inlineQuestion("$");
-            Global.io.print("Now enter a search term");
-            term = Global.io.inlineQuestion("$");
-            if (advanced.equalsIgnoreCase("price less than x")) {
-                // get all listings w/ price lower than x
-                for (int i = 0; i < listings.length(); i++) {
-                    if (BigDecimal.valueOf(listings.getJSONObject(i).getDouble("cost")).floatValue() <= Float.parseFloat(criteria)) {
-                        validListings.put(listings.getJSONObject(i));
-                    }
-                }
+            if (advanced.equals("3")) {
+                validListings = categorySearch();
+                Global.io.print("Now enter a search term");
+                term = Global.io.inlineQuestion("$");
             } else {
-                for (int i = 0; i < listings.length(); i++) {
-                    if (BigDecimal.valueOf(listings.getJSONObject(i).getDouble("cost")).floatValue() >= Float.parseFloat(criteria)) {
-                        validListings.put(listings.getJSONObject(i));
+                Global.io.print("Now enter your x (what the prices should be less than or greater than)");
+                String criteria = Global.io.inlineQuestion("$");
+                Global.io.print("Now enter a search term");
+                term = Global.io.inlineQuestion("$");
+                if (advanced.equals("1")) {
+                    // get all listings w/ price lower than x
+                    for (int i = 0; i < listings.length(); i++) {
+                        if (BigDecimal.valueOf(listings.getJSONObject(i).getDouble("cost")).floatValue() <= Float.parseFloat(criteria)) {
+                            validListings.put(listings.getJSONObject(i));
+                        }
+                    }
+                } else if (advanced.equals("2")){
+                    for (int i = 0; i < listings.length(); i++) {
+                        if (BigDecimal.valueOf(listings.getJSONObject(i).getDouble("cost")).floatValue() >= Float.parseFloat(criteria)) {
+                            validListings.put(listings.getJSONObject(i));
+                        }
                     }
                 }
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+
         }
         return search(validListings, term);
     }
 
     /**
      * Function to search for products based on certain criteria
-     * @return
      */
     public Response searchProducts() {
         Global.io.print("Enter a search term or type \"advancedSearch\"");
@@ -246,7 +275,6 @@ public class BuyerController extends Controller {
 
     /**
      * displays what is currently in the cart
-     * @return
      */
     public Response viewCart() {
         try {
@@ -289,8 +317,6 @@ public class BuyerController extends Controller {
     /**
      * adds an item to the users cart
      *  Implemented by the search function so as to avoid confusion with the listing id's
-     * @param id
-     * @return
      */
     public Response addToCart(int id) {
         try {
@@ -317,6 +343,9 @@ public class BuyerController extends Controller {
         return new Response("");
     }
 
+    /**
+     * Helper function that converts the numerical choice into its corresponding category
+     */
     public String getCategory(String choice) {
         if (choice.equals("1")) {
             return "apparel";
@@ -341,6 +370,10 @@ public class BuyerController extends Controller {
         }
     }
 
+    /**
+     * Returns an ArrayList of JSONObjects, where the contents are all of the Objects that match the category field
+     *  provided
+     */
     public ArrayList<JSONObject> getAllOfCategory(String category) {
         ArrayList<JSONObject> results = new ArrayList<>();
         try {
@@ -358,6 +391,9 @@ public class BuyerController extends Controller {
         return results;
     }
 
+    /**
+     * Helper function that implements a recommendation based on a chosen category
+     */
     public Response getCategoryRecommendation() {
         Global.io.print("Choose on of the following: (Enter the corresponding number)" +
                 "\n1. Apparel\t\t\t\t\tClothing, Shoes, Accessories, etc." +
@@ -391,6 +427,9 @@ public class BuyerController extends Controller {
         }
     }
 
+    /**
+     * Gets a recommendation, either baser on previous purchases or based on a chose category
+     */
     public Response getRecommendation() {
         try {
             JSONObject buyer = new JSONObject(Global.sendGet("/buyer?id=" + Global.currUser.id));
@@ -403,8 +442,15 @@ public class BuyerController extends Controller {
                 return getCategoryRecommendation();
             }
         } catch (Exception e) {
-            return new Response("");
+            return new Response("Failed to get recommendation");
         }
+    }
+
+    /**
+     * Allows the user to register or unregister for Congo Prime
+     */
+    private Response managePrime() {
+        return new Response("");
     }
 
     public Response reportOrder(){

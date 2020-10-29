@@ -7,6 +7,7 @@ public class Buyer extends User {
 	public ArrayList<Integer> orders;
 	public ArrayList<Integer> ratings;
 	public ArrayList<Integer> categories;
+	public Integer congo;
 
 	public Buyer(ArrayList<Integer> cart, ArrayList<Integer> orders, ArrayList<Integer> ratings, ArrayList<Integer> categories) {
 		super();
@@ -14,5 +15,6 @@ public class Buyer extends User {
 		this.orders = orders;
 		this.ratings = ratings;
 		this.categories = categories;
+		congo = 0;
 	}
 }
