@@ -8,6 +8,8 @@ public class User {
 	public String name;
 	public String password;
 	public String paymentCard;
+	public float balance;
+	public float credibility;
 	public ArrayList<Integer> messages;
 
 	public User(){}
