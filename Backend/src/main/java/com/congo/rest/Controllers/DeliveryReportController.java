@@ -7,10 +7,9 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Scanner;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @RestController
 public class DeliveryReportController {
@@ -31,16 +30,35 @@ public class DeliveryReportController {
 		}
 
 		ArrayList<DeliveryReport> deliveryReportList = new ArrayList<DeliveryReport>();
-		//find the specified deliveryReport (or all)
+
+		//get any unread reports
 		if(input.containsKey("all")) return deliveryReports;
 		if(input.containsKey("allUnread")){
 			ArrayList<DeliveryReport> unreadReports = new ArrayList<>();
 			for(DeliveryReport d : deliveryReports){
-				if(d.appealed == false) unreadReports.add(d);
+				if(!d.appealed) unreadReports.add(d);
 			}
+			return unreadReports;
 		}
+
+		//get any reports for the admin
+		try {
+			if (input.containsKey("admin")) {
+				ArrayList<DeliveryReport> adminReports = new ArrayList<>();
+				for (DeliveryReport d : deliveryReports) {
+					DateFormat format = new SimpleDateFormat("EEE MMM dd hh:mm:ss z yyyy", Locale.ENGLISH);
+					Date date = format.parse(d.date);
+					if (!d.appealed && (!d.sellerMessage.equals("") || new Date().after(date))) adminReports.add(d);
+				}
+				return adminReports;
+			}
+		} catch(Exception e){
+			e.printStackTrace();
+		}
+
+		//find the specified deliveryReport (or all)
 		for(DeliveryReport l : deliveryReports){
-			if((input.containsKey("id") && l.id == Long.parseLong(input.get("id"))) || (input.containsKey("seller") && l.seller == Long.parseLong(input.get("seller")) && l.appealed == false && l.buyerMessage == null) || (input.containsKey("buyer") && l.buyer == Long.parseLong(input.get("buyer")) && l.appealed == true)){
+			if((input.containsKey("id") && l.id == Long.parseLong(input.get("id"))) || (input.containsKey("seller") && l.seller == Long.parseLong(input.get("seller")) && !l.appealed && l.sellerMessage.equals("")) || (input.containsKey("buyer") && l.buyer == Long.parseLong(input.get("buyer")) && l.appealed)){
 				deliveryReportList.add(l);
 			}
 		}

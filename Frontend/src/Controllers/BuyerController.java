@@ -1,19 +1,21 @@
 package Controllers;
 
-import Classes.DeliveryReport;
-import Classes.Listing;
-import Classes.Message;
-import Classes.Order;
+import Classes.*;
 import Entities.Response;
 import Enums.Status;
 import Utils.Global;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import org.json.JSONArray;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.Locale;
 
 import com.google.gson.Gson;
 
@@ -299,7 +301,25 @@ public class BuyerController extends Controller {
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
                 for (int i = 0; i < cartInt.size(); i++) {
+                    Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage(), Listing[].class);
 
+                    //get the maximum delivery date
+                    DateFormat format = new SimpleDateFormat("dd-hh", Locale.ENGLISH);
+                    Date tmpDate = format.parse(listing[0].maxDelivery);
+                    Date date = new Date();
+                    Calendar c = Calendar.getInstance();
+                    c.setTime(date);
+                    c.add(Calendar.DATE, tmpDate.getDay());
+                    c.add(Calendar.HOUR, tmpDate.getHours());
+                    date = c.getTime();
+
+                    Order order = new Order();
+                    order.id = 0;
+                    order.endDate = date.toString();
+                    order.listings = new ArrayList<>();
+                    order.listings.add(cartInt.get(i));
+
+                    Global.sendPost("/order", new Gson().toJson(order));
                 }
             }
         } catch(Exception e) {
@@ -438,6 +458,20 @@ public class BuyerController extends Controller {
             Order order = new Gson().fromJson(Global.sendGet("/order?id="+orderID).getMessage(), Order.class);
             JSONArray jsonArray = new JSONArray(Global.sendGet("/listing?id=" + order.listings.get(0)).getMessage());
             Listing listing = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), Listing.class);
+
+            //if order is overdue, automatically refund
+            DateFormat format = new SimpleDateFormat("EEE MMM dd hh:mm:ss z yyyy", Locale.ENGLISH);
+            Date date = format.parse(order.endDate);
+            if(new Date().after(date)){
+                Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id="+Global.currUser.id).getMessage(), Buyer.class);
+                Seller seller = new Gson().fromJson(Global.sendGet("/seller?id="+listing.seller).getMessage(), Seller.class);
+
+                buyer.balance += listing.cost;
+                seller.balance -= listing.cost;
+                Global.sendDelete("/order?id=" + order.id);
+
+                return new Response("The order is overdue, a refund has been deposited in your account");
+            }
 
             //create the basis for the report
             DeliveryReport report = new DeliveryReport();

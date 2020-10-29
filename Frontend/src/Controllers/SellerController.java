@@ -223,11 +223,11 @@ public class SellerController extends Controller {
 
             for(int i=0 ; i<deliveryReports.length() ; i++){
                 JSONObject json = deliveryReports.getJSONObject(i);
-                Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id=" + json.getString("buyer")).getMessage(), Buyer.class);
-                JSONArray jsonArray = new JSONArray(Global.sendGet("/listing?id=" + json.getString("listing")).getMessage());
+                Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id=" + json.get("buyer")).getMessage(), Buyer.class);
+                JSONArray jsonArray = new JSONArray(Global.sendGet("/listing?id=" + json.get("listing")).getMessage());
                 Listing listing = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), Listing.class);
                 Global.io.print("---------------------------------------------------------");
-                Global.io.print("Report ID: " + json.getString("id"));
+                Global.io.print("Report ID: " + json.get("id"));
                 Global.io.print("Listing: " + listing.name);
                 Global.io.print("Buyer: " + buyer.name);
                 Global.io.print("---------------------------------------------------------");
@@ -235,6 +235,7 @@ public class SellerController extends Controller {
 
             return new Response("");
         } catch(Exception e){
+            e.printStackTrace();
             return new Response("Failed to load reports", Status.ERROR);
         }
     }

@@ -1,1 +1,1 @@
-[{"id":3,"name":"Clint1","password":"Pass","messages":[]}]
+[{"id":3,"name":"Clint1","password":"Pass","balance":0.0,"credibility":0.0,"messages":[]},{"id":5,"name":"test","password":"test","paymentCard":"12321","balance":0.0,"credibility":0.0}]
