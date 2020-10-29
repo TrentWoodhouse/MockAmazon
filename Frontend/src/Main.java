@@ -54,20 +54,22 @@ public class Main {
                     String name = Global.io.inlineQuestion("New Username: ");
                     String password = Global.io.inlineQuestion("New Password: ");
                     String paymentCard = Global.io.inlineQuestion("New Payment Card: ");
-                    String role = Global.io.inlineQuestion("New Role (buyer or seller): ");
+                    String role = Global.io.inlineQuestion("New Role (buyer, seller, or admin): ");
 
                     User tmp;
                     if (role.equals("buyer")) {
                         tmp = new Buyer(new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>(), new ArrayList<Integer>());
+                    } else if(role.equals("admin")) {
+                        tmp = new User();
                     } else {
                         tmp = new User();
                     }
-                    tmp.id = 4;
+                    tmp.id = 0;
                     tmp.name = name;
                     tmp.password = password;
 
                     //verify payment card
-                    if(paymentCard.length() > 16 || paymentCard.length() < 13) {
+                    /*if(paymentCard.length() > 16 || paymentCard.length() < 13) {
                         Global.io.error("Incorrect payment Card");
                         continue;
                     }
@@ -82,11 +84,11 @@ public class Main {
                     if(((firstSum+secondSum) % 10) != 0){
                         Global.io.error("Incorrect payment Card");
                         continue;
-                    }
+                    }*/
 
                     tmp.paymentCard = paymentCard;
 
-                    if(role.equals("buyer") || role.equals("seller")) {
+                    if(role.equals("buyer") || role.equals("seller") || role.equals("admin")) {
 
                         try {
                             //add the user to user
@@ -102,19 +104,21 @@ public class Main {
                             inputLine = Global.sendPost("/" + role, new Gson().toJson(tmp).toString()).getMessage();
 
                         } catch(Exception e){
+                            e.printStackTrace();
                             continue;
                         }
 
-                        if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller")) {
+                        if (inputLine.equals("Successfully Sent User") || inputLine.equals("Successfully Sent Buyer") || inputLine.equals("Successfully Sent Seller") || !inputLine.equals("Successfully Sent Admin")) {
                             Global.io.print("Successfully Created Your Account!");
 
                         } else {
                             Global.io.error("Failed to Create Your Account... Please Try Again");
                         }
                     }  else {
-                        Global.io.error("Please Enter 'buyer' or 'seller' For a Role");
+                        Global.io.error("Please Enter 'buyer', 'seller', or 'admin' For a Role");
                     }
-                } while(inputLine != null && !inputLine.equals("Successfully Sent User") && !inputLine.equals("Successfully Sent Buyer") && !inputLine.equals("Successfully Sent Seller"));
+
+                } while(inputLine != null && !inputLine.equals("Successfully Sent User") && !inputLine.equals("Successfully Sent Buyer") && !inputLine.equals("Successfully Sent Seller") && !inputLine.equals("Successfully Sent Admin"));
 
             } else {                        //log in an existing account
                 for (UserType u : UserType.values()) {

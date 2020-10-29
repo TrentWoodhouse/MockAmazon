@@ -6,6 +6,7 @@ import Enums.Status;
 import Utils.Global;
 import com.google.gson.Gson;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class AdminController extends Controller {
 
@@ -16,8 +17,10 @@ public class AdminController extends Controller {
             switch(exArr[0].toLowerCase()) {
                 case "menu":
                     return menu();
-                case "reviewreports":
-                    return reviewReports();
+                case "viewreports":
+                    return viewReports();
+                case "reviewreport":
+                    return reviewReport();
                 default:
                     return super.execute(command);
             }
@@ -36,7 +39,32 @@ public class AdminController extends Controller {
         return super.menu();
     }
 
-    public Response reviewReports(){
+    public Response viewReports(){
+        try{
+            JSONArray deliveryReports = new JSONArray(Global.sendGet("/deliveryReport?admin=xyz").getMessage());
+
+            //display all reports involving an admin (older than a day, or with a seller message)
+            for(int i=0 ; i<deliveryReports.length() ; i++){
+                JSONObject json = deliveryReports.getJSONObject(i);
+                Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id=" + json.get("buyer")).getMessage(), Buyer.class);
+                Seller seller = new Gson().fromJson(Global.sendGet("/seller?id=" + json.get("seller")).getMessage(), Seller.class);
+                JSONArray jsonArray = new JSONArray(Global.sendGet("/listing?id=" + json.get("listing")).getMessage());
+                Listing listing = new Gson().fromJson(jsonArray.getJSONObject(0).toString(), Listing.class);
+                Global.io.print("---------------------------------------------------------");
+                Global.io.print("Report ID: " + json.get("id"));
+                Global.io.print("Listing: " + listing.name);
+                Global.io.print("Buyer: " + buyer.name);
+                Global.io.print("Seller: " + seller.name);
+                Global.io.print("---------------------------------------------------------");
+            }
+
+            return new Response("");
+        } catch(Exception e){
+            return new Response("Failed to load reports", Status.ERROR);
+        }
+    }
+
+    public Response reviewReport(){
         try{
             //gather info to display to the admin
             String reportID = Global.io.inlineQuestion("What report number do you want to respond to? : ");
@@ -67,9 +95,17 @@ public class AdminController extends Controller {
             Global.io.print("");
 
             //complete the Response (refund/no refund)
+            String response = Global.io.inlineQuestion("Accept this Report? (yes or no) - ");
+            if(response.equals("yes")){
+                buyer.balance += listing.cost;
+                seller.balance -= listing.cost;
+                Global.sendDelete("/orders?id=" + order.id);
+            }
             deliveryReport.appealed = true;
 
-            return Global.sendPatch("/deliveryReport", new Gson().toJson(deliveryReport));
+            Global.sendPatch("/deliveryReport", new Gson().toJson(deliveryReport));
+
+            return new Response("Report successfully resolved");
         } catch(Exception e){
             e.printStackTrace();
             return new Response("Failed to complete response", Status.ERROR);

@@ -102,4 +102,20 @@ public class Global {
             return new Response(e.getMessage(), Status.ERROR);
         }
     }
+
+    public static Response sendDelete(String route){
+        try {
+            URL url = new URL(apiHost + route);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("DELETE");     //insecure, I know
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String inputLine = in.readLine();
+            in.close();
+
+            if(inputLine == null) return new Response("", Status.ERROR);
+            return new Response(inputLine);
+        } catch(Exception e){
+            return new Response(e.getMessage(), Status.ERROR);
+        }
+    }
 }
