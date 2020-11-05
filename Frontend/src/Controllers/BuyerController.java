@@ -85,10 +85,7 @@ public class BuyerController extends Controller {
         }
         Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
         Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
-<<<<<<< HEAD
         Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
-=======
->>>>>>> parent of e85c2f6... Fixed Orders, created viewOrders command
         return super.menu();
     }
 
