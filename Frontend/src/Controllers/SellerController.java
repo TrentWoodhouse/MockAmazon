@@ -40,6 +40,8 @@ public class SellerController extends Controller {
                     return getUnitsSold(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
                 case "getsales":
                     return getSales(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
+                case "makedeal":
+                    return makeDeal(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
                 default:
                     return super.execute(command);
             }
@@ -63,6 +65,7 @@ public class SellerController extends Controller {
         Global.io.print("respondToReport:\t\trespond to reports affecting your products");
         Global.io.print("getUnitsSold (id):\t\tgets all units sold from a listing, or all units sold by you if id is left blank");
         Global.io.print("getSales (id):\t\t\tgets total revenue from a listing, or all generated revenue if id is left blank");
+        Global.io.print("makeDeal (id):\t\t\tput listing(s) on sale.");
 
         return super.menu();
     }
@@ -347,6 +350,37 @@ public class SellerController extends Controller {
             }
             else {
                 return new Response("$100 revenue generated");
+            }
+        } catch (Exception e) {
+            return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
+        }
+    }
+
+    public Response makeDeal(int id) {
+        try {
+            if (id > 0) {
+                int percentage = Integer.parseInt(Global.io.question("What percentage should listing " + id + " be sold at? (1-100)"));
+                while(percentage < 1 || percentage > 100) {
+                    percentage = Integer.parseInt(Global.io.question("Please enter percentage between 1-100."));
+                }
+                JSONArray listingArray = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+                if (listingArray.length() != 1) {
+                    throw new RuntimeException("The listing doesn't exist");
+                }
+                JSONObject listing = listingArray.getJSONObject(0);
+                listing.put("salePercentage", percentage / 100.0);
+                Global.sendPatch("/listing?id=" + id, listing.toString());
+                return new Response("Listing " + id + " is now being sold at " + percentage + "% of its original value.");
+            }
+            else {
+                int percentage = Integer.parseInt(Global.io.question("What percentage should all listings be sold at? (1-100)"));
+                while(percentage < 1 || percentage > 100) {
+                    percentage = Integer.parseInt(Global.io.question("Please enter percentage between 1-100."));
+                }
+                JSONObject user = new JSONObject(Global.sendGet("/seller?name=" + Global.currUser.name).getMessage());
+                user.put("salePercentage", percentage / 100.0);
+                Global.sendPatch("/seller?name=" + Global.currUser.name, user.toString());
+                return new Response("All listings are now being sold at " + percentage + "% of their original value.");
             }
         } catch (Exception e) {
             return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
