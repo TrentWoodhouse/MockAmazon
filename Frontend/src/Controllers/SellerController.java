@@ -71,8 +71,17 @@ public class SellerController extends Controller {
     }
 
     public Response showListings() {
-        //TODO
-        return new Response("Listing 1\nListing 2");
+        Listing[] listings = new Gson().fromJson(Global.sendGet("/listing?seller="+Global.currUser.id).getMessage(), Listing[].class);
+
+        for(Listing l : listings){
+            Global.io.print("------------------------------------------");
+            Global.io.print("id: " + l.id);
+            Global.io.print("Name: " + l.name);
+            Global.io.print("Description: " + l.description);
+            Global.io.print("Cost: " + l.cost);
+            Global.io.print("------------------------------------------");
+        }
+        return new Response("");
     }
 
     public String chooseCategory(String choice) {
