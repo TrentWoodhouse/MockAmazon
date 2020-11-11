@@ -1,1 +1,1 @@
-[{"cart":[1,1],"orders":[],"ratings":[],"categories":[0,0,0,0,0,0,0,0,0],"congo":0,"primePoints":0.0,"rewardsCash":0.0,"id":7,"name":"Seth","password":"Pass","paymentCard":"0","balance":0.0,"credibility":0.0}]
+[{"cart":[2,1,2,3],"orders":[1,1],"ratings":[],"categories":[0,0,2,0,0,0,0,0,0],"congo":0,"primePoints":0.0,"rewardsCash":0.0,"id":7,"name":"Seth","password":"Pass","paymentCard":"0","balance":-59.98,"credibility":0.4}]

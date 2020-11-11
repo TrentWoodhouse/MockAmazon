@@ -4,10 +4,13 @@ import Classes.*;
 import Entities.Response;
 import Enums.Status;
 import Utils.Global;
+import com.google.gson.JsonObject;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.math.RoundingMode;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -19,6 +22,7 @@ import com.google.gson.Gson;
 
 
 public class BuyerController extends Controller {
+    private static DecimalFormat df = new DecimalFormat("0.00");
 
     @Override
     public Response execute(String command) {
@@ -298,10 +302,21 @@ public class BuyerController extends Controller {
             results = search(listings, term);
         }
         for (int i = 1; i<=results.size(); i++) {
-            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + results.get(i-1).getInt("id")).getMessage());
-            double sale = results.get(i-1).getDouble("salePercentage") != 1 ? results.get(i-1).getDouble("salePercentage") : seller.getDouble("salePercentage");
-            String saleText = sale != 1 ? " (" + Math.round((1 - sale) * 100) + "% off)" : "";
-            Global.io.print("Item " + i + ": " + results.get(i-1).getString("name") + ", Description: " + results.get(i-1).getString("description") + ", Cost: " + (Math.floor(results.get(i-1).getDouble("cost") * sale * 100) / 100) + saleText);
+            JSONObject listing = results.get(i-1);
+//            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + results.get(i-1).getInt("id")).getMessage());
+//            double sale = results.get(i-1).getDouble("salePercentage") != 1 ? results.get(i-1).getDouble("salePercentage") : seller.getDouble("salePercentage");
+//            String saleText = sale != 1 ? " (" + Math.round((1 - sale) * 100) + "% off)" : "";
+//            Global.io.print("Item " + i + ": " + results.get(i-1).getString("name") + ", Description: " + results.get(i-1).getString("description") + ", Cost: " + (Math.floor(results.get(i-1).getDouble("cost") * sale * 100) / 100) + saleText);
+            double biggestSale = listing.getDouble("salePercentage");
+            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
+            if (biggestSale > seller.getDouble("salePercentage")) {
+                biggestSale = seller.getDouble("salePercentage");
+            }
+            String saleText = biggestSale != 1 ? " (" + Math.round((1 - biggestSale) * 100) + "% off)" : "";
+            double salePrice = listing.getDouble("cost")*biggestSale;
+            df.setRoundingMode(RoundingMode.DOWN);
+
+            Global.io.print("Item " + i + ": " + listing.getString("name") + ", Description: " + listing.getString("description") + ", Cost: " + df.format(salePrice) + saleText);
         }
         Global.io.print("Found " + results.size() + " products that fit the criteria");
         if (results.size() == 0) {
@@ -329,7 +344,7 @@ public class BuyerController extends Controller {
             JSONArray orders = user.getJSONArray("orders");
 
             // checks contents of the cart and displays items and prices, as well as total price
-            Global.io.print("Cart\t\tPrice\t\t\tItem\t\t\tSale\t\t\tFinal\n-------------------------------------------------------------------");
+            Global.io.print("Cart\t\tPrice\t\t\tSale\t\t\tFinal\t\t\tItem\n---------------------------------------------------------------------------------------");
             float total = 0;
             float save = 0;
             if (cart.length() == 0) {
@@ -338,17 +353,27 @@ public class BuyerController extends Controller {
                 for (int i = 1; i <= cart.length(); i++) {
                     JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i - 1)).getMessage());
                     JSONObject listing = arr.getJSONObject(0);
-                    JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("id")).getMessage());
-                    double sale = listing.getDouble("salePercentage") != 1 ? listing.getDouble("salePercentage") : seller.getDouble("salePercentage");
-                    String saleText = sale != 1 ? Math.round((1 - sale) * 100) + "% off" : "";
-                    double actualCost = (Math.floor(listing.getDouble("cost") * sale * 100) / 100);
-                    cartInt.add(cart.getInt(i-1));
-                    Global.io.print("Item " + i + ":\t\t$" + listing.get("cost") + "\t\t\t" + listing.getString("name") + "\t\t" + saleText + "\t\t\t$" + actualCost);
-                    total += BigDecimal.valueOf(actualCost).floatValue();
+                    double biggestSale = listing.getDouble("salePercentage");
+                    JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
+                    if (biggestSale > seller.getDouble("salePercentage")) {
+                        biggestSale = seller.getDouble("salePercentage");
+                    }
+                    double originalPrice = listing.getDouble("cost");
+                    double salePrice = originalPrice*biggestSale;
+                    String printSale = "";
+                    if (biggestSale == 1.0) {
+                        printSale = "None";
+                    } else {
+                        printSale = Double.toString(biggestSale*100) + "%";
+                    }
+                    cartInt.add(cart.getInt(i - 1));
+                    df.setRoundingMode(RoundingMode.DOWN);
+                    Global.io.print("Item " + i + ":\t\t$" + originalPrice + "\t\t\t" + printSale + "\t\t\t$" + df.format(salePrice) + "\t\t\t" + listing.get("name"));
+                    total += BigDecimal.valueOf(salePrice).floatValue();
                 }
                 save = BigDecimal.valueOf(total*.15).floatValue();
             }
-            System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
+            System.out.format("---------------------------------------------------------------------------------------\nTotal: $%.2f\n", total);
             System.out.format("\nYou could save $%.2f on this purchase if you join CongoPrime\n\n", save);
             return total;
         } catch (Exception e) {
@@ -363,7 +388,7 @@ public class BuyerController extends Controller {
         try {
             JSONArray cart = user.getJSONArray("cart");
             JSONArray orders = user.getJSONArray("orders");
-            Global.io.print("Cart\t\tPrice\t\t\tItem\n-------------------------------------------------------------------");
+            Global.io.print("Cart\t\tCongo Price\t\tSale\t\t\tFinal\t\t\tItem\n---------------------------------------------------------------------------------------");
             float total = 0;
             float saved = 0;
             if (cart.length() == 0) {
@@ -372,14 +397,28 @@ public class BuyerController extends Controller {
                 for (int i = 1; i <= cart.length(); i++) {
                     JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + cart.getInt(i - 1)).getMessage());
                     JSONObject listing = arr.getJSONObject(0);
+                    double biggestSale = listing.getDouble("salePercentage");
+                    JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
+                    if (biggestSale > seller.getDouble("salePercentage")) {
+                        biggestSale = seller.getDouble("salePercentage");
+                    }
+                    double originalPrice = listing.getDouble("cost");
+                    double salePrice = originalPrice*biggestSale;
+                    String printSale = "";
+                    if (biggestSale == 1.0) {
+                        printSale = "None";
+                    } else {
+                        printSale = Double.toString(biggestSale*100) + "%";
+                    }
                     cartInt.add(cart.getInt(i - 1));
-                    System.out.format("Item %d:\t\t$%.2f\t\t\t%s%n", i, (listing.getDouble("cost")*.85), listing.getString("name"));
-                    total += BigDecimal.valueOf(listing.getDouble("cost")).floatValue();
+                    df.setRoundingMode(RoundingMode.DOWN);
+                    Global.io.print("Item " + i + ":\t\t$" + df.format(originalPrice*.85) + "\t\t\t" + printSale + "\t\t\t$" + df.format(salePrice*.85) + "\t\t\t" + listing.get("name"));
+                    total += BigDecimal.valueOf(salePrice).floatValue();
                 }
                 saved = BigDecimal.valueOf(total*.15).floatValue();
                 total = BigDecimal.valueOf(total*.85).floatValue();
             }
-            System.out.format("-------------------------------------------------------------------\nTotal: $%.2f\n", total);
+            System.out.format("---------------------------------------------------------------------------------------\nTotal: $%.2f\n", total);
             System.out.format("\nYou're saving $%.2f on this purchase thanks to CongoPrime\n\n", saved);
             return total;
         } catch (Exception e) {
