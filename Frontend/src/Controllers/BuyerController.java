@@ -63,6 +63,10 @@ public class BuyerController extends Controller {
                     return checkCredibility();
                 case "vieworders":
                     return viewOrders();
+                case "subscribe":
+                    return subscribe();
+                case "viewsubscriptions":
+                    return viewSubscriptions();
                 default:
                     return super.execute(command);
             }
@@ -92,6 +96,8 @@ public class BuyerController extends Controller {
         Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
         Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
         Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
+        Global.io.print("subscribe:\t\t\t\tsubscribe to a specific item on a regular basis for a reduced price");
+        Global.io.print("viewSubscriptions:\t\t\t\tview the current subscriptions for your account");
         return super.menu();
     }
 
@@ -303,31 +309,43 @@ public class BuyerController extends Controller {
         }
         for (int i = 1; i<=results.size(); i++) {
             JSONObject listing = results.get(i-1);
-//            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + results.get(i-1).getInt("id")).getMessage());
-//            double sale = results.get(i-1).getDouble("salePercentage") != 1 ? results.get(i-1).getDouble("salePercentage") : seller.getDouble("salePercentage");
-//            String saleText = sale != 1 ? " (" + Math.round((1 - sale) * 100) + "% off)" : "";
-//            Global.io.print("Item " + i + ": " + results.get(i-1).getString("name") + ", Description: " + results.get(i-1).getString("description") + ", Cost: " + (Math.floor(results.get(i-1).getDouble("cost") * sale * 100) / 100) + saleText);
-            double biggestSale = listing.getDouble("salePercentage");
-            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
-            if (biggestSale > seller.getDouble("salePercentage")) {
-                biggestSale = seller.getDouble("salePercentage");
-            }
-            String saleText = biggestSale != 1 ? " (" + Math.round((1 - biggestSale) * 100) + "% off)" : "";
-            double salePrice = listing.getDouble("cost")*biggestSale;
-            df.setRoundingMode(RoundingMode.DOWN);
-
-            Global.io.print("Item " + i + ": " + listing.getString("name") + ", Description: " + listing.getString("description") + ", Cost: " + df.format(salePrice) + saleText);
+            Global.io.print("Item " + i + ": " + listing.getString("name"));
         }
         Global.io.print("Found " + results.size() + " products that fit the criteria");
         if (results.size() == 0) {
             return new Response("Search complete");
         }
-        Global.io.print("Would you like to add one of these products to the cart? (y/n)");
+        Global.io.print("\nType the number of the item you would like to view or hit enter if you don't want to view one");
         String response = Global.io.inlineQuestion("$");
-        if (response.equalsIgnoreCase("y")) {
-            Global.io.print("Which one? Enter the number");
-            String number = Global.io.inlineQuestion("$");
-            return addToCart(results.get(Integer.parseInt(number)-1).getInt("id"));
+        int choice = 0;
+        if (response != "") {
+            try {
+                choice = Integer.parseInt(response);
+            } catch (NumberFormatException e) {
+                Global.io.print("Invalid input, returning to menu...");
+                return new Response("Nothing added to cart");
+            }
+            if (choice <= 0 || choice > results.size()) {
+                Global.io.print("Invalid input, returning to menu...");
+                return new Response("Nothing added to cart");
+            } else {
+                JSONObject listing = results.get(choice-1);
+
+                double biggestSale = listing.getDouble("salePercentage");
+                JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
+                if (biggestSale > seller.getDouble("salePercentage")) {
+                    biggestSale = seller.getDouble("salePercentage");
+                }
+                String saleText = biggestSale != 1 ? " (" + Math.round((1 - biggestSale) * 100) + "% off)" : "";
+                double salePrice = listing.getDouble("cost")*biggestSale;
+                df.setRoundingMode(RoundingMode.DOWN);
+
+                Global.io.print("Name: " + listing.get("name") + "\nDescription: " + listing.get("description") + "\nCost: " + df.format(salePrice) + saleText + "\n\nWould you like to add this item to your cart? (y/n)");
+                response = Global.io.inlineQuestion("$");
+                if (response.equalsIgnoreCase("y")) {
+                    return addToCart(listing.getInt("id"));
+                }
+            }
         }
         return new Response("Nothing added to cart");
         } catch(Exception e) {
@@ -789,6 +807,9 @@ public class BuyerController extends Controller {
         }
     }
 
+    /**
+     * checks to see if the user is a member of Congo Prime
+     */
     public Response checkRewards() {
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
@@ -799,6 +820,16 @@ public class BuyerController extends Controller {
         } catch (Exception e) {
             return new Response("Failed to fetch rewards");
         }
+    }
+
+    //TODO Finish This
+    public Response subscribe() {
+        return new Response("");
+    }
+
+    //TODO Finish This
+    public Response viewSubscriptions() {
+        return new Response("");
     }
 
     public Response reportOrder(){

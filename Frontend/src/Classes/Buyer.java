@@ -1,5 +1,7 @@
 package Classes;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 
 public class Buyer extends User {
@@ -7,6 +9,9 @@ public class Buyer extends User {
 	public ArrayList<Integer> orders;
 	public ArrayList<Integer> ratings;
 	public ArrayList<Integer> categories;
+	public ArrayList<JSONObject> subscriptions;
+	public int[] browsingHistory;
+	public int[] purchaseHistory;
 	public int congo;
 	public double primePoints;
 	public double rewardsCash;
@@ -16,9 +21,12 @@ public class Buyer extends User {
 		this.cart = cart;
 		this.orders = orders;
 		this.ratings = ratings;
-		categories = new ArrayList<Integer>();
+		categories = new ArrayList<>();
 		int i = 0;
 		while (i < 9) {categories.add(0); i++;}
+		subscriptions = new ArrayList<>();
+		browsingHistory = new int[] {0,0,0,0,0};
+		purchaseHistory = new int[] {0,0,0,0,0};
 		congo = 0;
 		primePoints = 0;
 		rewardsCash = 0;
