@@ -47,7 +47,9 @@ public class BuyerController extends Controller {
                 case "search":
                     return searchProducts();
                 case "viewcart":
-                        return viewCart();
+                    return viewCart();
+                case "clearcart":
+                    return clearCart();
                 case "reportorder":
                     return reportOrder();
                 case "recommendation":
@@ -74,7 +76,7 @@ public class BuyerController extends Controller {
                     return viewSubscriptions();
                 case "browsinghistory" :
                     return viewBrowsingHistory();
-                case "purchaseHistory":
+                case "purchasehistory":
                     return viewPurchaseHistory();
                 case "compareprices":
                     return comparePrices();
@@ -97,6 +99,7 @@ public class BuyerController extends Controller {
         Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
         Global.io.print("search:\t\t\t\t\tsearch available product listings");
         Global.io.print("viewCart:\t\t\t\tview all items in your cart");
+        Global.io.print("clearCart:\t\t\t\tempties your cart");
         Global.io.print("reportOrder:\t\t\treport one of your active orders");
         Global.io.print("recommendation:\t\t\tget a product recommendation");
         Global.io.print("checkPrime:\t\t\t\tcheck if you are currently a member of Congo Prime");
@@ -490,12 +493,17 @@ public class BuyerController extends Controller {
             } else {
                 total = congoCartPrint(user, cartInt);
             }
+            if (total == 0.0) {
+                return new Response("Leaving Cart...");
+            }
             Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
             String answer = Global.io.inlineQuestion("$");
 
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
                 for (int i = 0; i < cartInt.size(); i++) {
+                    user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+
                     Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage(), Listing[].class);
                     float cred = Float.parseFloat(String.valueOf(user.get("credibility")));
                     float balance = Float.parseFloat(String.valueOf(user.get("balance")));
@@ -527,6 +535,16 @@ public class BuyerController extends Controller {
                     user.put("orders", newOrders);
                     user.remove("categories");
                     user.put("categories", newCategories);
+
+                    //update purchase history
+                    JSONArray hist = user.getJSONArray("purchaseHistory");
+                    int[] history = new int[] {0,0,0,0,0};
+                    for (int j = 0; j < history.length; j++) {
+                        history[j] = hist.getInt(j);
+                    }
+                    history = updateHistory(history, cartInt.get(i));
+                    user.remove("purchaseHistory");
+                    user.put("purchaseHistory", history);
 
                     //get the maximum delivery date
                     DateFormat format = new SimpleDateFormat("dd-hh", Locale.ENGLISH);
@@ -566,10 +584,20 @@ public class BuyerController extends Controller {
             e.printStackTrace();
             return new Response("The view cart query failed", Status.ERROR);
         }
-        return new Response("Left cart...");
+        return new Response("Leaving cart...");
     }
 
-
+    public Response clearCart() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            user.remove("cart");
+            user.put("cart", new ArrayList<Integer>());
+            Global.sendPatch("/buyer", user.toString());
+            return new Response("Cart has been cleared");
+        } catch (Exception e) {
+            return new Response("Error, Cart not cleared");
+        }
+    }
 
     /**
      * adds an item to the users cart
@@ -635,6 +663,19 @@ public class BuyerController extends Controller {
             Global.io.print("Item:\t\t\t" + result.getString("name") +
                     "\nDescription:\t" + result.getString("description") +
                     "\nPrice:\t\t\t" + result.getDouble("cost"));
+
+            // Update browsing history
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray hist = user.getJSONArray("browsingHistory");
+            int[] history = new int[] {0,0,0,0,0};
+            for (int i = 0; i < history.length; i++) {
+                history[i] = hist.getInt(i);
+            }
+            history = updateHistory(history, result.getInt("id"));
+            user.remove("browsingHistory");
+            user.put("browsingHistory", history);
+            Global.sendPatch("/buyer", user.toString());
+
             String choice = Global.io.inlineQuestion("Would you like to add this item to you cart? (y/n)\n");
             if (choice.equalsIgnoreCase("y")) {
                 return addToCart(result.getInt("id"));
@@ -744,6 +785,19 @@ public class BuyerController extends Controller {
             Global.io.print("Item:\t\t\t" + result.getString("name") +
                     "\nDescription:\t" + result.getString("description") +
                     "\nPrice:\t\t\t" + result.getDouble("cost"));
+
+            // Update browsing history
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray hist = user.getJSONArray("browsingHistory");
+            int[] history = new int[] {0,0,0,0,0};
+            for (int i = 0; i < history.length; i++) {
+                history[i] = hist.getInt(i);
+            }
+            history = updateHistory(history, result.getInt("id"));
+            user.remove("browsingHistory");
+            user.put("browsingHistory", history);
+            Global.sendPatch("/buyer", user.toString());
+
             choice = Global.io.inlineQuestion("Would you like to add this item to you cart? (y/n)\n");
             if (choice.equalsIgnoreCase("y")) {
                 return addToCart(result.getInt("id"));
@@ -864,8 +918,8 @@ public class BuyerController extends Controller {
      */
     public int[] updateHistory(int[] history, int toAdd) {
         int[] ret = history;
-        for (int i = 0; i < ret.length-1; i++) {
-            ret[i] = history[i+1];
+        for (int i = ret.length-2; i >= 0; i--) {
+            ret[i+1] = ret[i];
         }
         ret[0] = toAdd;
         return ret;
@@ -892,7 +946,7 @@ public class BuyerController extends Controller {
         } catch (Exception e) {
             return new Response("Failed to get browsing history");
         }
-        return new Response("Returning to menu...");
+        return new Response("\nReturning to menu...");
     }
 
     public Response viewPurchaseHistory() {
@@ -900,15 +954,23 @@ public class BuyerController extends Controller {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             JSONArray history = user.getJSONArray("purchaseHistory");
             Global.io.print("Purchase History (Most recent first):");
-            for (int i = 0; i < history.length(); i++) {
-                JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + history.get(i)).getMessage());
-                JSONObject listing = arr.getJSONObject(0);
-                Global.io.print((i+1) + ") " + listing.get("name"));
+            if (history.getInt(0) == 0) {
+                Global.io.print("No items in purchase history");
+            } else {
+                for (int i = 0; i < history.length(); i++) {
+                    if (history.getInt(i) == 0) {
+                        break;
+                    } else {
+                        JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + history.get(i)).getMessage());
+                        JSONObject listing = arr.getJSONObject(0);
+                        Global.io.print((i + 1) + ") " + listing.get("name"));
+                    }
+                }
             }
         } catch (Exception e) {
             return new Response("Failed to get purchase history");
         }
-        return new Response("Returning to menu...");
+        return new Response("\nReturning to menu...");
     }
 
     public Response reportOrder(){
