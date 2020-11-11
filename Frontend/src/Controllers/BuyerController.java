@@ -4,10 +4,15 @@ import Classes.*;
 import Entities.Response;
 import Enums.Status;
 import Utils.Global;
+import com.ebay.sdk.ApiContext;
+import com.ebay.sdk.ApiCredential;
+import com.ebay.sdk.call.GeteBayOfficialTimeCall;
+import com.ebay.sdk.helper.ConsoleUtil;
 import com.google.gson.JsonObject;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -71,6 +76,8 @@ public class BuyerController extends Controller {
                     return viewBrowsingHistory();
                 case "purchaseHistory":
                     return viewPurchaseHistory();
+                case "compareprices":
+                    return comparePrices();
                 default:
                     return super.execute(command);
             }
@@ -175,6 +182,7 @@ public class BuyerController extends Controller {
 
         return new Response("Message Successfully Sent");
     }
+
     public Response viewMessages(){
 
         Response inputLine = Global.sendGet("/message?id="+Global.currUser.id);
@@ -997,5 +1005,41 @@ public class BuyerController extends Controller {
         } catch(Exception e){
             return new Response("Failed to load notifications", Status.ERROR);
         }
+    }
+
+
+
+    public Response comparePrices(){
+        try {
+            ApiContext apiContext = getApiContext();
+
+            GeteBayOfficialTimeCall apiCall = new GeteBayOfficialTimeCall(apiContext);
+            Calendar c = apiCall.geteBayOfficialTime();
+            System.out.println("EBAY time: " + c.getTime());
+
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+        return new Response("Completed search");
+    }
+
+    private static ApiContext getApiContext() throws IOException {
+
+        String input;
+        ApiContext apiContext = new ApiContext();
+
+        //set Api Token to access eBay Api Server
+        ApiCredential cred = apiContext.getApiCredential();
+        input = ConsoleUtil.readString("Enter your eBay Authentication Token: ");
+
+
+        cred.seteBayToken(input);
+
+        //set Api Server Url
+        input = ConsoleUtil.readString("Enter eBay SOAP server URL (e.g., https://api.sandbox.ebay.com/wsapi): ");
+
+        apiContext.setApiServerUrl(input);
+
+        return apiContext;
     }
 }
