@@ -67,6 +67,10 @@ public class BuyerController extends Controller {
                     return subscribe();
                 case "viewsubscriptions":
                     return viewSubscriptions();
+                case "browsinghistory" :
+                    return viewBrowsingHistory();
+                case "purchaseHistory":
+                    return viewPurchaseHistory();
                 default:
                     return super.execute(command);
             }
@@ -97,7 +101,9 @@ public class BuyerController extends Controller {
         Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
         Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
         Global.io.print("subscribe:\t\t\t\tsubscribe to a specific item on a regular basis for a reduced price");
-        Global.io.print("viewSubscriptions:\t\t\t\tview the current subscriptions for your account");
+        Global.io.print("viewSubscriptions:\t\tview the current subscriptions for your account");
+        Global.io.print("browsingHistory:\t\tview the 5 most recent items in your browsing history");
+        Global.io.print("purchaseHistory:\t\tview the 5 most recent items in your purchase history");
         return super.menu();
     }
 
@@ -330,6 +336,18 @@ public class BuyerController extends Controller {
                 return new Response("Nothing added to cart");
             } else {
                 JSONObject listing = results.get(choice-1);
+
+                // Update browsing history
+                JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+                JSONArray hist = user.getJSONArray("browsingHistory");
+                int[] history = new int[] {0,0,0,0,0};
+                for (int i = 0; i < history.length; i++) {
+                    history[i] = hist.getInt(i);
+                }
+                history = updateHistory(history, choice);
+                user.remove("browsingHistory");
+                user.put("browsingHistory", history);
+                Global.sendPatch("/buyer", user.toString());
 
                 double biggestSale = listing.getDouble("salePercentage");
                 JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
@@ -830,6 +848,59 @@ public class BuyerController extends Controller {
     //TODO Finish This
     public Response viewSubscriptions() {
         return new Response("");
+    }
+
+    /**
+     * Shifts everything in the given history int array to the left (discarding the last one) and inserts the toAdd int
+     *  into index 0
+     */
+    public int[] updateHistory(int[] history, int toAdd) {
+        int[] ret = history;
+        for (int i = 0; i < ret.length-1; i++) {
+            ret[i] = history[i+1];
+        }
+        ret[0] = toAdd;
+        return ret;
+    }
+
+    public Response viewBrowsingHistory() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray history = user.getJSONArray("browsingHistory");
+            Global.io.print("Browsing History (Most recent first):");
+            if (history.getInt(0) == 0) {
+                Global.io.print("No items in browsing history");
+            } else {
+                for (int i = 0; i < history.length(); i++) {
+                    if (history.getInt(i) == 0) {
+                        break;
+                    } else {
+                        JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + history.get(i)).getMessage());
+                        JSONObject listing = arr.getJSONObject(0);
+                        Global.io.print((i + 1) + ") " + listing.get("name"));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return new Response("Failed to get browsing history");
+        }
+        return new Response("Returning to menu...");
+    }
+
+    public Response viewPurchaseHistory() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray history = user.getJSONArray("purchaseHistory");
+            Global.io.print("Purchase History (Most recent first):");
+            for (int i = 0; i < history.length(); i++) {
+                JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + history.get(i)).getMessage());
+                JSONObject listing = arr.getJSONObject(0);
+                Global.io.print((i+1) + ") " + listing.get("name"));
+            }
+        } catch (Exception e) {
+            return new Response("Failed to get purchase history");
+        }
+        return new Response("Returning to menu...");
     }
 
     public Response reportOrder(){
