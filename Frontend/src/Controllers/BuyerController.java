@@ -57,6 +57,8 @@ public class BuyerController extends Controller {
                     return flagListing();
                 case "checkcredibility":
                     return checkCredibility();
+                case "vieworders":
+                    return viewOrders();
                 default:
                     return super.execute(command);
             }
@@ -410,11 +412,16 @@ public class BuyerController extends Controller {
 
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
-                Buyer buyer = new Gson().fromJson(user.toString(), Buyer.class);
                 for (int i = 0; i < cartInt.size(); i++) {
                     Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage(), Listing[].class);
-                    buyer.credibility = (float) Math.min(buyer.credibility+0.2, 5.0);
-                    buyer.balance -= listing[0].cost;
+                    float cred = Float.parseFloat(String.valueOf(user.get("credibility")));
+                    float balance = Float.parseFloat(String.valueOf(user.get("balance")));
+                    user.remove("credibility");
+                    user.remove("balance");
+                    balance -= listing[0].cost;
+                    cred = (float) Math.min(cred+0.2, 5.0);
+                    user.put("credibility", cred);
+                    user.put("balance", balance);
 
                     // add order to buyer
                     ArrayList<Integer> newCart = new ArrayList<>();
@@ -448,16 +455,17 @@ public class BuyerController extends Controller {
                     c.add(Calendar.HOUR, tmpDate.getHours());
                     date = c.getTime();
 
+                    //set order fields
                     Order order = new Order();
                     order.id = 0;
                     order.endDate = date.toString();
                     order.listings = new ArrayList<>();
                     order.listings.add(cartInt.get(i));
 
-                    Global.sendPatch("/buyer", user.toString()).getMessage();
                     Global.sendPost("/order", new Gson().toJson(order));
+                    //buyer.orders.add(orderID);
+                    Global.sendPatch("/buyer", user.toString());
                 }
-                Global.sendPatch("/buyer", new Gson().toJson(buyer));
                 if (user.getInt("congo") == 1) {
                     thisPurchase = BigDecimal.valueOf(total).doubleValue() * .10;
                     points += thisPurchase;
@@ -472,6 +480,7 @@ public class BuyerController extends Controller {
                 return new Response("Purchase Successful");
             }
         } catch(Exception e) {
+            e.printStackTrace();
             return new Response("The view cart query failed", Status.ERROR);
         }
         return new Response("Left cart...");
@@ -825,7 +834,21 @@ public class BuyerController extends Controller {
         return new Response("Your Credibility is:" + cred);
     }
 
-    public Response getNotifications(){
+    public Response viewOrders(){
+        Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id="+Global.currUser.id).getMessage(), Buyer.class);
+
+        for(int i : buyer.orders){
+            Order order = new Gson().fromJson(Global.sendGet("/order?id="+i).getMessage(), Order.class);
+            Global.io.print("------------------------------------------");
+            Global.io.print("id: " + order.id);
+            Global.io.print("End Date: " + order.endDate);
+            Global.io.print("Listings: " + order.listings);
+            Global.io.print("------------------------------------------");
+        }
+        return new Response("");
+    }
+
+    public static Response getNotifications(){
         try {
             JSONArray deliveryReports = new JSONArray(Global.sendGet("/deliveryReport?buyer=" + Global.currUser.id).getMessage());
             if(deliveryReports.length() > 0) return new Response(deliveryReports.length() + " reports have been resolved");

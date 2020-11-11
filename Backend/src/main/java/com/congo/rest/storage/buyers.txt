@@ -1,5 +1,1 @@
-<<<<<<< HEAD
 [{"cart":[1,1],"orders":[],"ratings":[],"categories":[0,0,0,0,0,0,0,0,0],"congo":0,"primePoints":0.0,"rewardsCash":0.0,"id":7,"name":"Seth","password":"Pass","paymentCard":"0","balance":0.0,"credibility":0.0}]
-=======
-[{"cart":[],"orders":[],"ratings":[],"categories":[0,0,0,0,0,0,0,0,0],"congo":0,"id":7,"name":"Seth","password":"Pass","paymentCard":"0","balance":0.0,"credibility":0.0}]
->>>>>>> parent of e85c2f6... Fixed Orders, created viewOrders command
