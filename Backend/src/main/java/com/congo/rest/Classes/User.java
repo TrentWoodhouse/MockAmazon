@@ -1,5 +1,7 @@
 package com.congo.rest.Classes;
 
+import com.sun.xml.internal.ws.wsdl.writer.document.http.Address;
+
 import java.util.ArrayList;
 
 public class User {
@@ -11,6 +13,7 @@ public class User {
 	public float balance;
 	public float credibility;
 	public ArrayList<Integer> messages;
+	public Address address;
 
 	public User(){}
 
