@@ -28,9 +28,9 @@ public class Controller {
     }
 
     public Response menu() {
-        Global.io.print("menu:\t\t\t\t\tlists all actions that can be performed\n" +
-                "route:\t\t\t\t\tlists the current route\n" +
-                "back:\t\t\t\t\tgo back");
+        Global.io.print("menu:\t\t\t\t\t\tlists all actions that can be performed\n" +
+                "route:\t\t\t\t\t\tlists the current route\n" +
+                "back:\t\t\t\t\t\tgo back");
         return new Response("", Status.NOACTION);
     }
 

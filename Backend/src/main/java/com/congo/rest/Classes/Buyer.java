@@ -7,6 +7,9 @@ public class Buyer extends User {
 	public ArrayList<Integer> orders;
 	public ArrayList<Integer> ratings;
 	public ArrayList<Integer> categories;
+	public ArrayList<String> subscriptions;
+	public int[] browsingHistory;
+	public int[] purchaseHistory;
 	public int congo;
 	public double primePoints;
 	public double rewardsCash;

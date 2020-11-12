@@ -34,7 +34,7 @@ public class ListingController {
 		//find the specified listing (or all)
 		if(input.containsKey("all")) return listings;
 		for(Listing l : listings){
-			if((input.containsKey("id") && l.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && l.name.equals(input.get("name")))){
+			if((input.containsKey("id") && l.id == Long.parseLong(input.get("id"))) || (input.containsKey("name") && l.name.equals(input.get("name"))) || (input.containsKey("seller") && l.seller == Long.parseLong(input.get("seller")))){
 				listingList.add(l);
 			}
 		}
