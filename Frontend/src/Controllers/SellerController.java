@@ -22,6 +22,8 @@ public class SellerController extends Controller {
         //Global.io.print(getNotifications().getMessage());
         try {
             switch(exArr[0].toLowerCase()) {
+                case "editdescription":
+                    return editDescription();
                 case "showlistings":
                     return showListings();
                 case "createlisting":
@@ -56,6 +58,7 @@ public class SellerController extends Controller {
 
     @Override
     public Response menu() {
+        Global.io.print("editDescription:\t\tedit your seller description and add social media links");
         Global.io.print("showListings:\t\t\tshows all your posted listings\n" +
                 "createListing:\t\t\tcreate a new listing\n" +
                 "editListing [id]:\t\tedit listing with the given id");
@@ -413,6 +416,30 @@ public class SellerController extends Controller {
             }
         } catch (Exception e) {
             return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
+        }
+    }
+
+    public Response editDescription() {
+        try {
+            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + Global.currUser.id).getMessage());
+            String description = seller.getString("description");
+            String partialDescription = description.substring(0, Math.min(seller.getString("description").length(), 30)) + "...";
+            String website = seller.getString("website");
+            String facebook = seller.getString("facebook");
+            String instagram = seller.getString("instagram");
+
+            Global.io.print("Edit description:");
+            seller.put("description", Global.io.inlineQuestion("Seller Description [" + partialDescription + "]:", description));
+            seller.put("website", Global.io.inlineQuestion("Website" + (website.equals("") ? ": " : " [" + website + "]: "), website));
+            seller.put("facebook", Global.io.inlineQuestion("Facebook" + (facebook.equals("") ? ": " : " [" + facebook + "]: "), facebook));
+            seller.put("instagram", Global.io.inlineQuestion("Instagram" + (instagram.equals("") ? ": " : " [" + instagram + "]: "), instagram));
+
+            String jsonString = seller.toString();
+
+            return Global.sendPatch("/seller?id=" + Global.currUser.id, jsonString);
+        }
+        catch(Exception e) {
+            return new Response("The seller description cannot be edited: " + e.getMessage(), Status.ERROR);
         }
     }
 }

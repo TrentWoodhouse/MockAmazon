@@ -13,8 +13,10 @@ import com.sun.org.apache.regexp.internal.RE;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.awt.*;
 import java.io.IOException;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -45,6 +47,8 @@ public class BuyerController extends Controller {
                     return sendMessage();
                 case "viewmessages":
                     return viewMessages();
+                case "viewseller":
+                    return viewSeller(Integer.parseInt(exArr[1]));
                 case "search":
                     return searchProducts();
                 case "viewcart":
@@ -96,6 +100,7 @@ public class BuyerController extends Controller {
     @Override
     public Response menu() {
         Global.io.print("giveFeedback [listingId]:\tgive feedback on a particular listing");
+        Global.io.print("viewSeller [sellerId]:\t\tview a seller and open links");
         Global.io.print("sendMessage:\t\t\t\tsend a message to a particular user");
         Global.io.print("viewMessages:\t\t\t\tview all messages from a user to you");
         Global.io.print("search:\t\t\t\t\t\tsearch available product listings");
@@ -1163,6 +1168,59 @@ public class BuyerController extends Controller {
             else return new Response("No new Notifications");
         } catch(Exception e){
             return new Response("Failed to load notifications", Status.ERROR);
+        }
+    }
+
+    public Response viewSeller(int id) {
+        try {
+            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + id).getMessage());
+            String description = seller.getString("description");
+            String website = seller.getString("website");
+            String facebook = seller.getString("facebook");
+            String instagram = seller.getString("instagram");
+
+            Global.io.print("View Seller");
+            Global.io.print("====================================");
+            if(!description.isEmpty()){
+                Global.io.print(description);
+            }
+            else {
+                Global.io.print("This seller has no description.");
+            }
+            if(!website.isEmpty()){
+                if (Global.io.inlineQuestion("Navigate to seller's website? (yes/no)").equals("yes")) {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(new URI(website));
+                    }
+                    else {
+                        Global.io.print(website);
+                    }
+                }
+            }
+            if(!facebook.isEmpty()){
+                if (Global.io.inlineQuestion("Navigate to seller's facebook? (yes/no)").equals("yes")) {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(new URI(facebook));
+                    }
+                    else {
+                        Global.io.print(facebook);
+                    }
+                }
+            }
+            if(!instagram.isEmpty()){
+                if (Global.io.inlineQuestion("Navigate to seller's instagram? (yes/no)").equals("yes")) {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(new URI(instagram));
+                    }
+                    else {
+                        Global.io.print(instagram);
+                    }
+                }
+            }
+            return new Response("Exiting view seller");
+        }
+        catch(Exception e) {
+            return new Response("An error occurred viewing seller " + id + "'s info: " + e.getMessage(), Status.ERROR);
         }
     }
 
