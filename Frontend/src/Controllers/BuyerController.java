@@ -6,16 +6,20 @@ import Enums.Status;
 import Utils.Global;
 import com.ebay.sdk.ApiContext;
 import com.ebay.sdk.ApiCredential;
-import com.ebay.sdk.call.GeteBayOfficialTimeCall;
 import com.ebay.sdk.helper.ConsoleUtil;
-import com.google.gson.JsonObject;
-import com.sun.org.apache.regexp.internal.RE;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jsoup.*;
 
 import java.awt.*;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.RoundingMode;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -24,9 +28,13 @@ import java.util.*;
 
 import org.json.JSONArray;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.gson.Gson;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 
 public class BuyerController extends Controller {
@@ -85,6 +93,8 @@ public class BuyerController extends Controller {
                     return viewPurchaseHistory();
                 case "compareprices":
                     return comparePrices();
+                case "trackshipments":
+                    return trackShipments();
                 default:
                     return super.execute(command);
             }
@@ -113,13 +123,15 @@ public class BuyerController extends Controller {
         if (getPrimeStatus() == 1) {
             Global.io.print("checkRewards:\t\t\t\tcheck what rewards you have earned as a Congo Prime member");
         }
-        Global.io.print("flagListing:\t\t\t\tflag a listing for breaking Congo policies");
-        Global.io.print("checkCredibility:\t\t\tcheck your standing with the Congo community");
-        Global.io.print("viewOrders:\t\t\t\t\tview the current orders of your account");
-        Global.io.print("subscribe [listingId]:\t\tsubscribe to a specific item on a regular basis for a reduced price");
-        Global.io.print("viewSubscriptions:\t\t\tview the current subscriptions for your account");
-        Global.io.print("browsingHistory:\t\t\tview up to the 5 most recent items in your browsing history");
-        Global.io.print("purchaseHistory:\t\t\tview up to the 5 most recent items in your purchase history");
+        Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
+        Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
+        Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
+        Global.io.print("subscribe:\t\t\t\tsubscribe to a specific item on a regular basis for a reduced price");
+        Global.io.print("viewSubscriptions:\t\tview the current subscriptions for your account");
+        Global.io.print("browsingHistory:\t\tview the 5 most recent items in your browsing history");
+        Global.io.print("purchaseHistory:\t\tview the 5 most recent items in your purchase history");
+        Global.io.print("comparePrices:\t\tview top prices of similar listings on other retail sites");
+        Global.io.print("trackShipments:\t\tview shipments related to your account.");
         return super.menu();
     }
 
@@ -1153,7 +1165,7 @@ public class BuyerController extends Controller {
         Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id="+Global.currUser.id).getMessage(), Buyer.class);
 
         for(int i : buyer.orders){
-            Order order = new Gson().fromJson(Global.sendGet("/order?id="+i).getMessage(), Order.class);
+            Order order = new Gson().fromJson(Global.sendGet("/order/"+i).getMessage(), Order.class);
             Global.io.print("------------------------------------------");
             Global.io.print("id: " + order.id);
             Global.io.print("End Date: " + order.endDate);
@@ -1230,16 +1242,66 @@ public class BuyerController extends Controller {
 
     public Response comparePrices(){
         try {
-            ApiContext apiContext = getApiContext();
+            Document doc = Jsoup.connect("https://www.ebay.com/globaldeals").userAgent("Mozilla/17.0").get();
+            Elements tmp = doc.select("dne-itemtile-detail");
 
-            GeteBayOfficialTimeCall apiCall = new GeteBayOfficialTimeCall(apiContext);
-            Calendar c = apiCall.geteBayOfficialTime();
-            System.out.println("EBAY time: " + c.getTime());
+            for(Element card : tmp){
 
+            }
         } catch(Exception e){
             e.printStackTrace();
         }
-        return new Response("Completed search");
+
+        return new Response("");
+    }
+
+    public Response trackShipments(){
+        try {
+            Buyer buyer = new Gson().fromJson(Global.sendGet("/buyer?id="+Global.currUser.id).getMessage(), Buyer.class);
+            JSONObject json;
+
+            for(int i : buyer.orders){
+                Order order = new Gson().fromJson(Global.sendGet("/order/"+i).getMessage(), Order.class);
+                if(order.shipmentID != null) json = getPackageData(order.shipmentID);
+                else continue;
+                //json = getPackageData("1Z933R1A1314152653");
+
+                JSONObject jsonDetail = json.getJSONArray("trackDetails").getJSONObject(0);
+                JSONObject jsonTracking = jsonDetail.getJSONArray("shipmentProgressActivities").getJSONObject(0);
+
+                Global.io.print("------------------------------------------");
+                Global.io.print("id: " + order.id);
+                Global.io.print("Progress Percent: " + jsonDetail.getString("progressBarPercentage"));
+                Global.io.print("Shipment Status: " + jsonDetail.getString("progressBarType"));
+
+                Global.io.print("");
+                if(jsonDetail.getString("progressBarType").equals("Delivered")){
+                    Global.io.print("Delivered time: " + jsonDetail.getString("deliveredDate") + " at " + jsonDetail.getString("deliveredTime"));
+                    Global.io.print("Left At: " + jsonDetail.getString("leftAt"));
+                    Global.io.print("------");
+                    Global.io.print("Last Tracked Data:");
+                    Global.io.print("Location: " + jsonTracking.getString("location"));
+                    Global.io.print("Time: " + jsonTracking.getString("date") + " at " + jsonTracking.getString("time"));
+                    Global.io.print("Note: " + jsonTracking.getString("activityScan"));
+                } else {
+                    Global.io.print("Expected Delivery time: " + jsonDetail.getString("scheduledDeliveryDate") + " at " + jsonDetail.getString("scheduledDeliveryTime"));
+                    Global.io.print("To Be Left At: " + jsonDetail.getString("leaveAt"));
+                    Global.io.print("------");
+                    Global.io.print("Last Tracked Data:");
+                    Global.io.print("Location: " + jsonTracking.getString("location"));
+                    Global.io.print("Time: " + jsonTracking.getString("date") + " at " + jsonTracking.getString("time"));
+                    Global.io.print("Note: " + jsonTracking.getString("activityScan"));
+                }
+
+                Global.io.print("------------------------------------------");
+            }
+
+            Global.io.print("- End of Results -");
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+
+        return new Response("");
     }
 
     private static ApiContext getApiContext() throws IOException {
@@ -1255,10 +1317,59 @@ public class BuyerController extends Controller {
         cred.seteBayToken(input);
 
         //set Api Server Url
-        input = ConsoleUtil.readString("Enter eBay SOAP server URL (e.g., https://api.sandbox.ebay.com/wsapi): ");
+        //input = "https://api.ebay.com/wsapi";
+        input = "https://api.sandbox.ebay.com/wsapi";
 
         apiContext.setApiServerUrl(input);
 
         return apiContext;
+    }
+
+    private JSONObject getPackageData(String packageID){
+        try{
+            //send a get request to get verification data (in cookies)
+            URL url = new URL("https://www.ups.com/track/api/Track/GetStatus");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            conn.connect();
+            Map<String, List<String>> headerFields = conn.getHeaderFields();
+            List<String> cookiesHeader = headerFields.get("Set-Cookie");
+            String s = cookiesHeader.get(2).split(";|\\=")[1];
+            in.close();
+
+
+            //send a post with the requested tracking number
+            String json = "{\"TrackingNumber\": [\"" + packageID + "\"]}";
+            byte[] rawData = json.getBytes(StandardCharsets.UTF_8);
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setDoOutput(true);
+            conn.setInstanceFollowRedirects(false);
+            conn.setConnectTimeout(5000);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty( "Content-Type", "application/json" );
+            conn.addRequestProperty( "X-XSRF-TOKEN", "CfDJ8Jcj9GhlwkdBikuRYzfhrpLRf1xiYNvFzxiDFNTZnPX5LNVJiMIGFNe0WZfZl9er6Y0gNLny1j-4AikY7dbDEbOcRtAYubkNCwCNk6I34KKQcOhG_cNu3YZSMoaZKjGlbtEUDzWSoRSOEDybvzyJWMI");
+            conn.setRequestProperty( "Content-Length", String.valueOf(rawData.length));
+            conn.setRequestProperty( "Accept", "application/json");
+            String string = "";
+            for(String str : headerFields.get("Set-Cookie")) string += str;
+            string = "ak_bmsc=FD79A496705FE5015CF87E04D1D5D5F9172A9E2C096F00002469AD5F2C0EFF28~plN7gWLr5RJd7jF4tv9zTHKad1gx0u2ABwOVCjJ7BEfqIvTcu0/tEgEqCXBDlLm2a/X18Mmni5JhL8QbPqqCiWMjeMCteWPvDtH4f+9XuCNTNflT+JY6+Kv8VFO1Xg0OK7HHS7+0YFTFTwCTqYeuyeDEq3cHkGAxhfB9eh/f6FiwWDKfKHNuehw+R4ZIJ8RvBWNLeBDyDmfJWDnyLqvWMLvM+T9rCZKAHkwCFqNz37sUM=; bm_sz=864D6A84804D84028E2263117A37FB9C~YAAQLJ4qF2mh5Lp1AQAAXLZivQmDaNTgJsilTefXxzIewyLUNDnD99fKKDbWGsoJr7IqQy3CXSJfPZeLk6EV4wj7Zs9qOBuj3UIV1mYM6TqsaZz8YLYyAo4s2hnPwYgWQP6nBLFG55PtvlF0uc8dih1quRSHxfW02b+nKh2KiT3QL1r16S3bXcMyXJls; X-CSRF-TOKEN=CfDJ8Jcj9GhlwkdBikuRYzfhrpKtYqzpGV0H7A9PC4S2FNaOc3f8ZxJZNGHpwhZO7yEhECHyV0qsdxKO7erWCFN_Dy_-cgPlk_B1THIsXcfsHOV_2W8CdwvGMaaR5QQhjt1bL65EIQ1g9RL36arJKeDyPS4; X-XSRF-TOKEN-ST=CfDJ8Jcj9GhlwkdBikuRYzfhrpJ9LsVqx1-Dr3dj6u4ZBic_YEdqLv_jCrD2POQZ4DSfxksfO3-X5Pvsl9mfYQTAjeXMIBMjcWU7IpPbdD_ImuGhdRb_ggpDyQvWrXNITCorLu0b9qUJ9XrKBDe7cVY89W0; _abck=F26C7EF97C98E3BD18D314B6F661729F~-1~YAAQLJ4qF9oJ5bp1AQAAKx+QvQRBJAaC+yPIPnKtMBTI+Bb636HzhdckiiV65OVHeetI5QLmutG355T+Eh/CkFRT7kFvbSDf33fqcQykvLuYfhsd01bZVs7O9F7nk5QJT7kEw767U6Lmh/KS+fKN9nMU76BQJ9bHrlCMacy7iO274ySz93CXr2wfzFdlRj2Ra0EPhRc23nDdDusKPq4il6HVSGwtESGCwF9BDCc5FMtpv3SBtalYJmMtPtnikHghtn6445ihvl61/QsYlOVwYQk5zxHHgdjxJJxS52xp2/Uz3jiVvNo+vsyhLJQlj3wrgZ00NA==~0~-1~-1";
+            conn.setRequestProperty( "Cookie", string);
+            conn.connect();
+            OutputStream os = conn.getOutputStream();
+            os.write(rawData);
+            in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            os.close();
+
+            //receive the json from the post
+            String inputLine = in.readLine();
+            in.close();
+            conn.disconnect();
+
+            return new JSONObject(inputLine);
+        } catch(Exception e){
+            e.printStackTrace();
+        }
+        return null;
     }
 }

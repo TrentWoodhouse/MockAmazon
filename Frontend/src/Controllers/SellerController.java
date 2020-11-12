@@ -5,8 +5,6 @@ import Entities.Response;
 import Enums.Status;
 import Utils.Global;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,6 +45,10 @@ public class SellerController extends Controller {
                     return makeDeal(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
                 case "viewlistingviews":
                     return viewListingViews(Integer.parseInt(exArr[1]), exArr[2]);
+                case "getpendingorders":
+                    return getPendingOrders();
+                case "setshippingid":
+                    return setShippingID();
                 default:
                     return super.execute(command);
             }
@@ -75,6 +77,8 @@ public class SellerController extends Controller {
                 "type=average: shows average views per day\n\t\t\t\t\t\t\t" +
                 "type=percentage: shows what percentage of views result in a sale");
         Global.io.print("makeDeal (id):\t\t\tput listing(s) on sale.");
+        Global.io.print("getPendingOrders:\t\t\tget all orders belonging to you that do not have a shipping ID");
+        Global.io.print("setshippingid:\t\t\tAdd a shipping ID to an order");
 
         return super.menu();
     }
@@ -423,6 +427,36 @@ public class SellerController extends Controller {
         } catch (Exception e) {
             return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
         }
+    }
+
+    public Response getPendingOrders(){
+        Order[] orders = new Gson().fromJson(Global.sendGet("/order").getMessage(), Order[].class);
+        Listing[] listings = new Gson().fromJson(Global.sendGet("/listing?all=xyz").getMessage(), Listing[].class);
+
+        for(Order o : orders){
+            for(Listing l : listings){
+                if(l.seller == Global.currUser.id && o.shipmentID == null && o.listings.contains(Integer.parseInt(String.valueOf(l.id)))){
+                    Global.io.print("------------------------------------------");
+                    Global.io.print("id: " + o.id);
+                    Global.io.print("End Date: " + o.endDate);
+                    Global.io.print("Listings: " + o.listings);
+                    Global.io.print("------------------------------------------");
+                } else continue;
+            }
+        }
+
+        return new Response("- End of Results -");
+    }
+
+    public Response setShippingID() {
+        String res = Global.io.question("What order ID do have you shipped?");
+        Order order = new Gson().fromJson(Global.sendGet("/order/" + res).getMessage(), Order.class);
+
+        order.shipmentID = Global.io.question("Shipping ID: ");
+
+        Global.sendPatch("/order?id=" + order.id, new Gson().toJson(order));
+
+        return new Response("Order Shipping ID has been updated!");
     }
 
     public Response editDescription() {
