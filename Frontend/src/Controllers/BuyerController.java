@@ -9,6 +9,7 @@ import com.ebay.sdk.ApiCredential;
 import com.ebay.sdk.call.GeteBayOfficialTimeCall;
 import com.ebay.sdk.helper.ConsoleUtil;
 import com.google.gson.JsonObject;
+import com.sun.org.apache.regexp.internal.RE;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -71,7 +72,7 @@ public class BuyerController extends Controller {
                 case "vieworders":
                     return viewOrders();
                 case "subscribe":
-                    return subscribe();
+                    return subscribe(Integer.parseInt(exArr[1]));
                 case "viewsubscriptions":
                     return viewSubscriptions();
                 case "browsinghistory" :
@@ -94,26 +95,26 @@ public class BuyerController extends Controller {
 
     @Override
     public Response menu() {
-        Global.io.print("giveFeedback [listingId]: give feedback on a particular listing");
-        Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
-        Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
-        Global.io.print("search:\t\t\t\t\tsearch available product listings");
-        Global.io.print("viewCart:\t\t\t\tview all items in your cart");
-        Global.io.print("clearCart:\t\t\t\tempties your cart");
-        Global.io.print("reportOrder:\t\t\treport one of your active orders");
-        Global.io.print("recommendation:\t\t\tget a product recommendation");
-        Global.io.print("checkPrime:\t\t\t\tcheck if you are currently a member of Congo Prime");
-        Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
+        Global.io.print("giveFeedback [listingId]:\tgive feedback on a particular listing");
+        Global.io.print("sendMessage:\t\t\t\tsend a message to a particular user");
+        Global.io.print("viewMessages:\t\t\t\tview all messages from a user to you");
+        Global.io.print("search:\t\t\t\t\t\tsearch available product listings");
+        Global.io.print("viewCart:\t\t\t\t\tview all items in your cart");
+        Global.io.print("clearCart:\t\t\t\t\tempties your cart");
+        Global.io.print("reportOrder:\t\t\t\treport one of your active orders");
+        Global.io.print("recommendation:\t\t\t\tget a product recommendation");
+        Global.io.print("checkPrime:\t\t\t\t\tcheck if you are currently a member of Congo Prime");
+        Global.io.print("managePrime:\t\t\t\tregister or unregister for Congo Prime");
         if (getPrimeStatus() == 1) {
-            Global.io.print("checkRewards:\t\t\tcheck what rewards you have earned as a Congo Prime member");
+            Global.io.print("checkRewards:\t\t\t\tcheck what rewards you have earned as a Congo Prime member");
         }
-        Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
-        Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
-        Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
-        Global.io.print("subscribe:\t\t\t\tsubscribe to a specific item on a regular basis for a reduced price");
-        Global.io.print("viewSubscriptions:\t\tview the current subscriptions for your account");
-        Global.io.print("browsingHistory:\t\tview the 5 most recent items in your browsing history");
-        Global.io.print("purchaseHistory:\t\tview the 5 most recent items in your purchase history");
+        Global.io.print("flagListing:\t\t\t\tflag a listing for breaking Congo policies");
+        Global.io.print("checkCredibility:\t\t\tcheck your standing with the Congo community");
+        Global.io.print("viewOrders:\t\t\t\t\tview the current orders of your account");
+        Global.io.print("subscribe [listingId]:\t\tsubscribe to a specific item on a regular basis for a reduced price");
+        Global.io.print("viewSubscriptions:\t\t\tview the current subscriptions for your account");
+        Global.io.print("browsingHistory:\t\t\tview up to the 5 most recent items in your browsing history");
+        Global.io.print("purchaseHistory:\t\t\tview up to the 5 most recent items in your purchase history");
         return super.menu();
     }
 
@@ -903,13 +904,109 @@ public class BuyerController extends Controller {
     }
 
     //TODO Finish This
-    public Response subscribe() {
-        return new Response("");
+    public Response subscribe(int id) {
+        // see if item id exists
+        try {
+            JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+            JSONObject listing = arr.getJSONObject(0);
+        } catch (Exception e) {
+            return new Response("There is no item with that ID");
+        }
+        String ans = Global.io.inlineQuestion("How frequently would you like this item? (Enter the corresponding number)" +
+                "\n1. Once per week\n2. Once per month\n3. Once per year\n");
+        int freq = 0;
+        String frequency = "";
+        try {
+            freq = Integer.parseInt(ans);
+            if (freq == 1) {
+                frequency = "week";
+            } else if (freq == 2) {
+                frequency = "month";
+            } else if (freq == 3) {
+                frequency = "year";
+            } else {
+                return new Response("Subscription not added due to invalid entry, returning to menu...");
+            }
+        } catch (Exception e) {
+            return new Response("Subscription not added due to invalid entry, returning to menu...");
+        }
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray subscriptions = user.getJSONArray("subscriptions");
+            ArrayList<JSONObject> newSubs = new ArrayList<>();
+            for (int i = 0; i < subscriptions.length(); i++) {
+                newSubs.add(subscriptions.getJSONObject(i));
+            }
+            JSONObject newSub = new JSONObject();
+            newSub.put("id", id);
+            newSub.put("frequency", frequency);
+
+            Date date = new Date();
+            Calendar c = Calendar.getInstance();
+            c.setTime(date);
+            if (freq == 1) {
+                c.add(Calendar.DAY_OF_YEAR, 7);
+                newSub.put("discount", .99);
+            } else if (freq == 2) {
+                c.add(Calendar.MONTH, 1);
+                newSub.put("discount", .97);
+            } else if (freq == 3) {
+                c.add(Calendar.YEAR, 1);
+                newSub.put("discount", .95);
+            }
+            date = c.getTime();
+
+            newSub.put("next", date.toString());
+
+            newSubs.add(newSub);
+
+            user.remove("subscriptions");
+            user.put("subscriptions", newSubs);
+
+            Global.sendPatch("/buyer", user.toString());
+
+            return new Response("Subscription successfully added");
+        } catch (Exception e){
+            return new Response("Failed to add subscription");
+        }
     }
 
-    //TODO Finish This
+    //TODO Test This
     public Response viewSubscriptions() {
-        return new Response("");
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray subs = user.getJSONArray("subscriptions");
+            if (subs.length() == 0) {
+                Global.io.print("You have no current subscriptions");
+            } else {
+                Global.io.print("Current Subscriptions: ");
+                Global.io.print("------------------------------------------------------------------------------------");
+                for (int i = 0; i < subs.length(); i++) {
+                    JSONObject sub = subs.getJSONObject(i);
+                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + sub.get("id")).getMessage());
+                    JSONObject listing = arr.getJSONObject(0);
+                    double biggestSale = listing.getDouble("salePercentage");
+                    JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
+                    if (biggestSale > seller.getDouble("salePercentage")) {
+                        biggestSale = seller.getDouble("salePercentage");
+                    }
+                    double price = listing.getDouble("cost")*biggestSale;
+
+                    if (user.getInt("congo") == 1) {
+                        price = price*.85;
+                    }
+                    price = price * sub.getDouble("discount");
+                    Global.io.print("Item:\t\t\t" + sub.get("name")
+                            + "\nPrice:\t\t\t" + price + "(" + ((1-sub.getDouble("discount"))*100) + "% discount)"
+                            + "\nFrequency:\t\tOnce per " + sub.get("frequency")
+                            + "\nNext Order Date:\t" + sub.get("next")
+                            + "\n------------------------------------------------------------------------------------");
+                }
+            }
+            return new Response("\nReturning to menu...");
+        } catch (Exception e) {
+            return new Response("Failed to fetch current subscriptions");
+        }
     }
 
     /**
