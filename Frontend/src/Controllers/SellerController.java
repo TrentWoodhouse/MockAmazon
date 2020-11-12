@@ -349,7 +349,27 @@ public class SellerController extends Controller {
                 return new Response("$" + (unitsSold * listing.getDouble("cost")) + " revenue generated");
             }
             else {
-                return new Response("$100 revenue generated");
+                double totalSales = 0;
+                JSONArray listings = new JSONArray(Global.sendGet("/listing").getMessage());
+                for(int i = 0; i < listings.length(); i++) {
+                    if (listings.getJSONObject(i).getInt("seller") == Global.currUser.id) {
+                        int unitsSold = 0;
+                        JSONArray orders = new JSONArray(Global.sendGet("/order").getMessage());
+                        for (int j = 0; j < orders.length(); j++) {
+                            JSONObject order = orders.getJSONObject(j);
+                            JSONArray listingIdArray = order.getJSONArray("listings");
+                            for (int k = 0; k < listingIdArray.length(); k++) {
+                                if (listingIdArray.getInt(k) == id) {
+                                    unitsSold++;
+                                    break;
+                                }
+                            }
+                        }
+                        JSONObject listing = listings.getJSONObject(i);
+                        totalSales += unitsSold * listing.getDouble("cost");
+                    }
+                }
+                return new Response("$" + totalSales + " revenue generated");
             }
         } catch (Exception e) {
             return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
