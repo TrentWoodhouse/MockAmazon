@@ -6,12 +6,12 @@ import Enums.Status;
 import Utils.Global;
 import com.ebay.sdk.ApiContext;
 import com.ebay.sdk.ApiCredential;
-import com.ebay.sdk.call.GeteBayOfficialTimeCall;
 import com.ebay.sdk.helper.ConsoleUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.*;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -20,6 +20,7 @@ import java.math.RoundingMode;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.net.URI;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -27,6 +28,7 @@ import java.util.*;
 
 import org.json.JSONArray;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.gson.Gson;
@@ -53,10 +55,14 @@ public class BuyerController extends Controller {
                     return sendMessage();
                 case "viewmessages":
                     return viewMessages();
+                case "viewseller":
+                    return viewSeller(Integer.parseInt(exArr[1]));
                 case "search":
                     return searchProducts();
                 case "viewcart":
-                        return viewCart();
+                    return viewCart();
+                case "clearcart":
+                    return clearCart();
                 case "reportorder":
                     return reportOrder();
                 case "recommendation":
@@ -78,12 +84,12 @@ public class BuyerController extends Controller {
                 case "vieworders":
                     return viewOrders();
                 case "subscribe":
-                    return subscribe();
+                    return subscribe(Integer.parseInt(exArr[1]));
                 case "viewsubscriptions":
                     return viewSubscriptions();
                 case "browsinghistory" :
                     return viewBrowsingHistory();
-                case "purchaseHistory":
+                case "purchasehistory":
                     return viewPurchaseHistory();
                 case "compareprices":
                     return comparePrices();
@@ -103,17 +109,19 @@ public class BuyerController extends Controller {
 
     @Override
     public Response menu() {
-        Global.io.print("giveFeedback [listingId]: give feedback on a particular listing");
-        Global.io.print("sendMessage:\t\t\tsend a message to a particular user");
-        Global.io.print("viewMessages:\t\t\tview all messages from a user to you");
-        Global.io.print("search:\t\t\t\t\tsearch available product listings");
-        Global.io.print("viewCart:\t\t\t\tview all items in your cart");
-        Global.io.print("reportOrder:\t\t\treport one of your active orders");
-        Global.io.print("recommendation:\t\t\tget a product recommendation");
-        Global.io.print("checkPrime:\t\t\t\tcheck if you are currently a member of Congo Prime");
-        Global.io.print("managePrime:\t\t\tregister or unregister for Congo Prime");
+        Global.io.print("giveFeedback [listingId]:\tgive feedback on a particular listing");
+        Global.io.print("viewSeller [sellerId]:\t\tview a seller and open links");
+        Global.io.print("sendMessage:\t\t\t\tsend a message to a particular user");
+        Global.io.print("viewMessages:\t\t\t\tview all messages from a user to you");
+        Global.io.print("search:\t\t\t\t\t\tsearch available product listings");
+        Global.io.print("viewCart:\t\t\t\t\tview all items in your cart");
+        Global.io.print("clearCart:\t\t\t\t\tempties your cart");
+        Global.io.print("reportOrder:\t\t\t\treport one of your active orders");
+        Global.io.print("recommendation:\t\t\t\tget a product recommendation");
+        Global.io.print("checkPrime:\t\t\t\t\tcheck if you are currently a member of Congo Prime");
+        Global.io.print("managePrime:\t\t\t\tregister or unregister for Congo Prime");
         if (getPrimeStatus() == 1) {
-            Global.io.print("checkRewards:\t\t\tcheck what rewards you have earned as a Congo Prime member");
+            Global.io.print("checkRewards:\t\t\t\tcheck what rewards you have earned as a Congo Prime member");
         }
         Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
         Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
@@ -503,12 +511,17 @@ public class BuyerController extends Controller {
             } else {
                 total = congoCartPrint(user, cartInt);
             }
+            if (total == 0.0) {
+                return new Response("Leaving Cart...");
+            }
             Global.io.print("Hit the Enter key to return to the main console or \"purchase\" to buy the items in your cart");
             String answer = Global.io.inlineQuestion("$");
 
             // add to orders for buyer and listings if purchased
             if (answer.toLowerCase().equals("purchase")) {
                 for (int i = 0; i < cartInt.size(); i++) {
+                    user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+
                     Listing[] listing = new Gson().fromJson(Global.sendGet("/listing?id="+cartInt.get(i)).getMessage(), Listing[].class);
                     float cred = Float.parseFloat(String.valueOf(user.get("credibility")));
                     float balance = Float.parseFloat(String.valueOf(user.get("balance")));
@@ -540,6 +553,16 @@ public class BuyerController extends Controller {
                     user.put("orders", newOrders);
                     user.remove("categories");
                     user.put("categories", newCategories);
+
+                    //update purchase history
+                    JSONArray hist = user.getJSONArray("purchaseHistory");
+                    int[] history = new int[] {0,0,0,0,0};
+                    for (int j = 0; j < history.length; j++) {
+                        history[j] = hist.getInt(j);
+                    }
+                    history = updateHistory(history, cartInt.get(i));
+                    user.remove("purchaseHistory");
+                    user.put("purchaseHistory", history);
 
                     //get the maximum delivery date
                     DateFormat format = new SimpleDateFormat("dd-hh", Locale.ENGLISH);
@@ -579,10 +602,20 @@ public class BuyerController extends Controller {
             e.printStackTrace();
             return new Response("The view cart query failed", Status.ERROR);
         }
-        return new Response("Left cart...");
+        return new Response("Leaving cart...");
     }
 
-
+    public Response clearCart() {
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            user.remove("cart");
+            user.put("cart", new ArrayList<Integer>());
+            Global.sendPatch("/buyer", user.toString());
+            return new Response("Cart has been cleared");
+        } catch (Exception e) {
+            return new Response("Error, Cart not cleared");
+        }
+    }
 
     /**
      * adds an item to the users cart
@@ -648,6 +681,19 @@ public class BuyerController extends Controller {
             Global.io.print("Item:\t\t\t" + result.getString("name") +
                     "\nDescription:\t" + result.getString("description") +
                     "\nPrice:\t\t\t" + result.getDouble("cost"));
+
+            // Update browsing history
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray hist = user.getJSONArray("browsingHistory");
+            int[] history = new int[] {0,0,0,0,0};
+            for (int i = 0; i < history.length; i++) {
+                history[i] = hist.getInt(i);
+            }
+            history = updateHistory(history, result.getInt("id"));
+            user.remove("browsingHistory");
+            user.put("browsingHistory", history);
+            Global.sendPatch("/buyer", user.toString());
+
             String choice = Global.io.inlineQuestion("Would you like to add this item to you cart? (y/n)\n");
             if (choice.equalsIgnoreCase("y")) {
                 return addToCart(result.getInt("id"));
@@ -757,6 +803,19 @@ public class BuyerController extends Controller {
             Global.io.print("Item:\t\t\t" + result.getString("name") +
                     "\nDescription:\t" + result.getString("description") +
                     "\nPrice:\t\t\t" + result.getDouble("cost"));
+
+            // Update browsing history
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray hist = user.getJSONArray("browsingHistory");
+            int[] history = new int[] {0,0,0,0,0};
+            for (int i = 0; i < history.length; i++) {
+                history[i] = hist.getInt(i);
+            }
+            history = updateHistory(history, result.getInt("id"));
+            user.remove("browsingHistory");
+            user.put("browsingHistory", history);
+            Global.sendPatch("/buyer", user.toString());
+
             choice = Global.io.inlineQuestion("Would you like to add this item to you cart? (y/n)\n");
             if (choice.equalsIgnoreCase("y")) {
                 return addToCart(result.getInt("id"));
@@ -862,13 +921,109 @@ public class BuyerController extends Controller {
     }
 
     //TODO Finish This
-    public Response subscribe() {
-        return new Response("");
+    public Response subscribe(int id) {
+        // see if item id exists
+        try {
+            JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+            JSONObject listing = arr.getJSONObject(0);
+        } catch (Exception e) {
+            return new Response("There is no item with that ID");
+        }
+        String ans = Global.io.inlineQuestion("How frequently would you like this item? (Enter the corresponding number)" +
+                "\n1. Once per week\n2. Once per month\n3. Once per year\n");
+        int freq = 0;
+        String frequency = "";
+        try {
+            freq = Integer.parseInt(ans);
+            if (freq == 1) {
+                frequency = "week";
+            } else if (freq == 2) {
+                frequency = "month";
+            } else if (freq == 3) {
+                frequency = "year";
+            } else {
+                return new Response("Subscription not added due to invalid entry, returning to menu...");
+            }
+        } catch (Exception e) {
+            return new Response("Subscription not added due to invalid entry, returning to menu...");
+        }
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray subscriptions = user.getJSONArray("subscriptions");
+            ArrayList<JSONObject> newSubs = new ArrayList<>();
+            for (int i = 0; i < subscriptions.length(); i++) {
+                newSubs.add(subscriptions.getJSONObject(i));
+            }
+            JSONObject newSub = new JSONObject();
+            newSub.put("id", id);
+            newSub.put("frequency", frequency);
+
+            Date date = new Date();
+            Calendar c = Calendar.getInstance();
+            c.setTime(date);
+            if (freq == 1) {
+                c.add(Calendar.DAY_OF_YEAR, 7);
+                newSub.put("discount", .99);
+            } else if (freq == 2) {
+                c.add(Calendar.MONTH, 1);
+                newSub.put("discount", .97);
+            } else if (freq == 3) {
+                c.add(Calendar.YEAR, 1);
+                newSub.put("discount", .95);
+            }
+            date = c.getTime();
+
+            newSub.put("next", date.toString());
+
+            newSubs.add(newSub);
+
+            user.remove("subscriptions");
+            user.put("subscriptions", newSubs);
+
+            Global.sendPatch("/buyer", user.toString());
+
+            return new Response("Subscription successfully added");
+        } catch (Exception e){
+            return new Response("Failed to add subscription");
+        }
     }
 
-    //TODO Finish This
+    //TODO Test This
     public Response viewSubscriptions() {
-        return new Response("");
+        try {
+            JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
+            JSONArray subs = user.getJSONArray("subscriptions");
+            if (subs.length() == 0) {
+                Global.io.print("You have no current subscriptions");
+            } else {
+                Global.io.print("Current Subscriptions: ");
+                Global.io.print("------------------------------------------------------------------------------------");
+                for (int i = 0; i < subs.length(); i++) {
+                    JSONObject sub = subs.getJSONObject(i);
+                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + sub.get("id")).getMessage());
+                    JSONObject listing = arr.getJSONObject(0);
+                    double biggestSale = listing.getDouble("salePercentage");
+                    JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
+                    if (biggestSale > seller.getDouble("salePercentage")) {
+                        biggestSale = seller.getDouble("salePercentage");
+                    }
+                    double price = listing.getDouble("cost")*biggestSale;
+
+                    if (user.getInt("congo") == 1) {
+                        price = price*.85;
+                    }
+                    price = price * sub.getDouble("discount");
+                    Global.io.print("Item:\t\t\t" + sub.get("name")
+                            + "\nPrice:\t\t\t" + price + "(" + ((1-sub.getDouble("discount"))*100) + "% discount)"
+                            + "\nFrequency:\t\tOnce per " + sub.get("frequency")
+                            + "\nNext Order Date:\t" + sub.get("next")
+                            + "\n------------------------------------------------------------------------------------");
+                }
+            }
+            return new Response("\nReturning to menu...");
+        } catch (Exception e) {
+            return new Response("Failed to fetch current subscriptions");
+        }
     }
 
     /**
@@ -877,8 +1032,8 @@ public class BuyerController extends Controller {
      */
     public int[] updateHistory(int[] history, int toAdd) {
         int[] ret = history;
-        for (int i = 0; i < ret.length-1; i++) {
-            ret[i] = history[i+1];
+        for (int i = ret.length-2; i >= 0; i--) {
+            ret[i+1] = ret[i];
         }
         ret[0] = toAdd;
         return ret;
@@ -905,7 +1060,7 @@ public class BuyerController extends Controller {
         } catch (Exception e) {
             return new Response("Failed to get browsing history");
         }
-        return new Response("Returning to menu...");
+        return new Response("\nReturning to menu...");
     }
 
     public Response viewPurchaseHistory() {
@@ -913,15 +1068,23 @@ public class BuyerController extends Controller {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             JSONArray history = user.getJSONArray("purchaseHistory");
             Global.io.print("Purchase History (Most recent first):");
-            for (int i = 0; i < history.length(); i++) {
-                JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + history.get(i)).getMessage());
-                JSONObject listing = arr.getJSONObject(0);
-                Global.io.print((i+1) + ") " + listing.get("name"));
+            if (history.getInt(0) == 0) {
+                Global.io.print("No items in purchase history");
+            } else {
+                for (int i = 0; i < history.length(); i++) {
+                    if (history.getInt(i) == 0) {
+                        break;
+                    } else {
+                        JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + history.get(i)).getMessage());
+                        JSONObject listing = arr.getJSONObject(0);
+                        Global.io.print((i + 1) + ") " + listing.get("name"));
+                    }
+                }
             }
         } catch (Exception e) {
             return new Response("Failed to get purchase history");
         }
-        return new Response("Returning to menu...");
+        return new Response("\nReturning to menu...");
     }
 
     public Response reportOrder(){
@@ -1017,6 +1180,59 @@ public class BuyerController extends Controller {
             else return new Response("No new Notifications");
         } catch(Exception e){
             return new Response("Failed to load notifications", Status.ERROR);
+        }
+    }
+
+    public Response viewSeller(int id) {
+        try {
+            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + id).getMessage());
+            String description = seller.getString("description");
+            String website = seller.getString("website");
+            String facebook = seller.getString("facebook");
+            String instagram = seller.getString("instagram");
+
+            Global.io.print("View Seller");
+            Global.io.print("====================================");
+            if(!description.isEmpty()){
+                Global.io.print(description);
+            }
+            else {
+                Global.io.print("This seller has no description.");
+            }
+            if(!website.isEmpty()){
+                if (Global.io.inlineQuestion("Navigate to seller's website? (yes/no)").equals("yes")) {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(new URI(website));
+                    }
+                    else {
+                        Global.io.print(website);
+                    }
+                }
+            }
+            if(!facebook.isEmpty()){
+                if (Global.io.inlineQuestion("Navigate to seller's facebook? (yes/no)").equals("yes")) {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(new URI(facebook));
+                    }
+                    else {
+                        Global.io.print(facebook);
+                    }
+                }
+            }
+            if(!instagram.isEmpty()){
+                if (Global.io.inlineQuestion("Navigate to seller's instagram? (yes/no)").equals("yes")) {
+                    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                        Desktop.getDesktop().browse(new URI(instagram));
+                    }
+                    else {
+                        Global.io.print(instagram);
+                    }
+                }
+            }
+            return new Response("Exiting view seller");
+        }
+        catch(Exception e) {
+            return new Response("An error occurred viewing seller " + id + "'s info: " + e.getMessage(), Status.ERROR);
         }
     }
 

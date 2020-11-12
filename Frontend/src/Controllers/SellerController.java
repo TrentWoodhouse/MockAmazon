@@ -20,6 +20,8 @@ public class SellerController extends Controller {
         //Global.io.print(getNotifications().getMessage());
         try {
             switch(exArr[0].toLowerCase()) {
+                case "editdescription":
+                    return editDescription();
                 case "showlistings":
                     return showListings();
                 case "createlisting":
@@ -58,6 +60,7 @@ public class SellerController extends Controller {
 
     @Override
     public Response menu() {
+        Global.io.print("editDescription:\t\tedit your seller description and add social media links");
         Global.io.print("showListings:\t\t\tshows all your posted listings\n" +
                 "createListing:\t\t\tcreate a new listing\n" +
                 "editListing [id]:\t\tedit listing with the given id");
@@ -362,7 +365,27 @@ public class SellerController extends Controller {
                 return new Response("$" + (unitsSold * listing.getDouble("cost")) + " revenue generated");
             }
             else {
-                return new Response("$100 revenue generated");
+                double totalSales = 0;
+                JSONArray listings = new JSONArray(Global.sendGet("/listing").getMessage());
+                for(int i = 0; i < listings.length(); i++) {
+                    if (listings.getJSONObject(i).getInt("seller") == Global.currUser.id) {
+                        int unitsSold = 0;
+                        JSONArray orders = new JSONArray(Global.sendGet("/order").getMessage());
+                        for (int j = 0; j < orders.length(); j++) {
+                            JSONObject order = orders.getJSONObject(j);
+                            JSONArray listingIdArray = order.getJSONArray("listings");
+                            for (int k = 0; k < listingIdArray.length(); k++) {
+                                if (listingIdArray.getInt(k) == id) {
+                                    unitsSold++;
+                                    break;
+                                }
+                            }
+                        }
+                        JSONObject listing = listings.getJSONObject(i);
+                        totalSales += unitsSold * listing.getDouble("cost");
+                    }
+                }
+                return new Response("$" + totalSales + " revenue generated");
             }
         } catch (Exception e) {
             return new Response("An error occurred: " + e.getMessage(), Status.ERROR);
@@ -419,14 +442,38 @@ public class SellerController extends Controller {
         return new Response("- End of Results -");
     }
 
-    public Response setShippingID(){
+    public Response setShippingID() {
         String res = Global.io.question("What order ID do have you shipped?");
-        Order order = new Gson().fromJson(Global.sendGet("/order/"+res).getMessage(), Order.class);
+        Order order = new Gson().fromJson(Global.sendGet("/order/" + res).getMessage(), Order.class);
 
         order.shipmentID = Global.io.question("Shipping ID: ");
 
         Global.sendPatch("/order?id=" + order.id, new Gson().toJson(order));
 
         return new Response("Order Shipping ID has been updated!");
+    }
+
+    public Response editDescription() {
+        try {
+            JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + Global.currUser.id).getMessage());
+            String description = seller.getString("description");
+            String partialDescription = description.substring(0, Math.min(seller.getString("description").length(), 30)) + "...";
+            String website = seller.getString("website");
+            String facebook = seller.getString("facebook");
+            String instagram = seller.getString("instagram");
+
+            Global.io.print("Edit description:");
+            seller.put("description", Global.io.inlineQuestion("Seller Description [" + partialDescription + "]:", description));
+            seller.put("website", Global.io.inlineQuestion("Website" + (website.equals("") ? ": " : " [" + website + "]: "), website));
+            seller.put("facebook", Global.io.inlineQuestion("Facebook" + (facebook.equals("") ? ": " : " [" + facebook + "]: "), facebook));
+            seller.put("instagram", Global.io.inlineQuestion("Instagram" + (instagram.equals("") ? ": " : " [" + instagram + "]: "), instagram));
+
+            String jsonString = seller.toString();
+
+            return Global.sendPatch("/seller?id=" + Global.currUser.id, jsonString);
+        }
+        catch(Exception e) {
+            return new Response("The seller description cannot be edited: " + e.getMessage(), Status.ERROR);
+        }
     }
 }
