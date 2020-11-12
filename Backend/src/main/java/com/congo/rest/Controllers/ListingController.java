@@ -7,10 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Scanner;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 @RestController
 public class ListingController {
@@ -57,6 +55,10 @@ public class ListingController {
 
 		listing.id = listings.size()+1;
 		listing.salePercentage = 1;
+		listing.views = 0;
+
+		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+		listing.dateCreated = sdf.format(new Date());
 		listings.add(listing);
 
 		//attempt to add the new Json to a file

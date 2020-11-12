@@ -11,6 +11,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -44,6 +45,8 @@ public class SellerController extends Controller {
                     return getSales(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
                 case "makedeal":
                     return makeDeal(exArr.length > 1 ? Integer.parseInt(exArr[1]) : 0);
+                case "viewlistingviews":
+                    return viewListingViews(Integer.parseInt(exArr[1]), exArr[2]);
                 default:
                     return super.execute(command);
             }
@@ -68,6 +71,9 @@ public class SellerController extends Controller {
         Global.io.print("respondToReport:\t\trespond to reports affecting your products");
         Global.io.print("getUnitsSold (id):\t\tgets all units sold from a listing, or all units sold by you if id is left blank");
         Global.io.print("getSales (id):\t\t\tgets total revenue from a listing, or all generated revenue if id is left blank");
+        Global.io.print("viewListingViews [id] [type]:\ttype=total: shows all views for a listing\n\t\t\t\t\t\t\t" +
+                "type=average: shows average views per day\n\t\t\t\t\t\t\t" +
+                "type=percentage: shows what percentage of views result in a sale");
         Global.io.print("makeDeal (id):\t\t\tput listing(s) on sale.");
 
         return super.menu();
@@ -440,6 +446,48 @@ public class SellerController extends Controller {
         }
         catch(Exception e) {
             return new Response("The seller description cannot be edited: " + e.getMessage(), Status.ERROR);
+        }
+    }
+
+    public Response viewListingViews(int id, String type) {
+        try {
+            JSONArray listingArray = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
+            if (listingArray.length() != 1) {
+                throw new RuntimeException("The listing doesn't exist");
+            }
+            JSONObject listing = listingArray.getJSONObject(0);
+            int views = listing.getInt("views");
+            String name = listing.getString("name");
+
+            SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+            Date dateCreated = sdf.parse(listing.getString("dateCreated"));
+            Global.io.print(name);
+            switch(type){
+                case "total":
+                    return new Response(views + " total views", Status.OK);
+                case "average":
+                    double avg = views / ((double)(((new Date()).getTime() - dateCreated.getTime()) / (1000*60*60*24)) + 1);
+                    return new Response(avg + " views per day", Status.OK);
+                case "percentage":
+                    int unitsSold = 0;
+                    JSONArray orders = new JSONArray(Global.sendGet("/order").getMessage());
+                    for (int i = 0; i < orders.length(); i++) {
+                        JSONObject order = orders.getJSONObject(i);
+                        JSONArray listings = order.getJSONArray("listings");
+                        for (int j = 0; j < listings.length(); j++) {
+                            if(listings.getInt(j) == id) {
+                                unitsSold++;
+                                break;
+                            }
+                        }
+                    }
+                    return new Response((double)unitsSold / views * 100 + "% of views result in a sale", Status.OK);
+                default:
+                    return new Response("There is no type \"" + type + "\" for viewListingViews. Please use total, average, or percentage", Status.ERROR);
+            }
+        }
+        catch(Exception e) {
+            return new Response("There was an error trying to view the listings view info: " + e.getMessage(), Status.ERROR);
         }
     }
 }

@@ -353,6 +353,8 @@ public class BuyerController extends Controller {
                 return new Response("Nothing added to cart");
             } else {
                 JSONObject listing = results.get(choice-1);
+                listing.put("views", listing.getInt("views") + 1);
+                Global.sendPatch("/listing", listing.toString());
 
                 // Update browsing history
                 JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
