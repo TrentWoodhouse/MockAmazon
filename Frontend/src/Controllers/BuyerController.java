@@ -6,6 +6,8 @@ import Enums.Status;
 import Utils.Global;
 import com.ebay.sdk.ApiContext;
 import com.ebay.sdk.ApiCredential;
+import com.ebay.sdk.call.GetItemCall;
+import com.ebay.sdk.call.GeteBayOfficialTimeCall;
 import com.ebay.sdk.helper.ConsoleUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,10 +34,13 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.google.gson.Gson;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
+import com.ebay.services.client.ClientConfig;
+import com.ebay.services.client.FindingServiceClientFactory;
+import com.ebay.services.finding.FindItemsByKeywordsRequest;
+import com.ebay.services.finding.FindItemsByKeywordsResponse;
+import com.ebay.services.finding.FindingServicePortType;
+import com.ebay.services.finding.PaginationInput;
+import com.ebay.services.finding.SearchItem;
 
 public class BuyerController extends Controller {
     private static DecimalFormat df = new DecimalFormat("0.00");
@@ -1238,10 +1243,8 @@ public class BuyerController extends Controller {
         }
     }
 
-
-
     public Response comparePrices(){
-        try {
+        /*try {
             Document doc = Jsoup.connect("https://www.ebay.com/globaldeals").userAgent("Mozilla/17.0").get();
             Elements tmp = doc.select("dne-itemtile-detail");
 
@@ -1249,6 +1252,49 @@ public class BuyerController extends Controller {
 
             }
         } catch(Exception e){
+            e.printStackTrace();
+        }*/
+
+        try {
+            //Initialize eBay ApiContext object
+            ApiContext apiContext = getApiContext();
+
+            //Create call object and execute the call
+            GeteBayOfficialTimeCall apiCall = new GeteBayOfficialTimeCall(apiContext);
+
+            ClientConfig config = new ClientConfig();
+            // endpoint address can be overwritten here, by default, production address is used,
+            // to enable sandbox endpoint, just uncomment the following line
+            //config.setEndPointAddress("http://svcs.sandbox.ebay.com/services/search/FindingService/v1");
+            config.setApplicationId("ClintonL-CS321Con-PRD-37d2479af-1cc009e8");
+
+            //create a service client
+            FindingServicePortType serviceClient = FindingServiceClientFactory.getServiceClient(config);
+            //create request object
+            FindItemsByKeywordsRequest request = new FindItemsByKeywordsRequest();
+            //set request parameters
+            request.setKeywords(Global.io.inlineQuestion("What item do you want to compare? : "));
+            PaginationInput pi = new PaginationInput();
+            pi.setEntriesPerPage(5);
+            request.setPaginationInput(pi);
+
+            //call service
+            FindItemsByKeywordsResponse result = serviceClient.findItemsByKeywords(request);
+
+            //output result
+            Global.io.print("Top " + result.getSearchResult().getCount() + " items:" );
+            List<SearchItem> items = result.getSearchResult().getItem();
+            for(SearchItem item : items) {
+                Global.io.print("------------------------------------------");
+                Global.io.print(item.getTitle());
+                Global.io.print("Category:" + item.getPrimaryCategory().getCategoryName());
+                Global.io.print("Location:" + item.getLocation());
+                Global.io.print("Price: " + item.getSellingStatus().getCurrentPrice().getValue());
+            }
+            Global.io.print(" - End of Results - ");
+        }
+        catch(Exception e) {
+            System.out.println("Failed to find Matching items");
             e.printStackTrace();
         }
 
@@ -1311,13 +1357,11 @@ public class BuyerController extends Controller {
 
         //set Api Token to access eBay Api Server
         ApiCredential cred = apiContext.getApiCredential();
-        input = ConsoleUtil.readString("Enter your eBay Authentication Token: ");
+        input = "AgAAAA**AQAAAA**aAAAAA**beKyXw**nY+sHZ2PrBmdj6wVnY+sEZ2PrA2dj6wFk4aiDJOEqAWdj6x9nY+seQ**MXIFAA**AAMAAA**8dtx4XnUcI7Croq7IGu/k7Ku5IVjaVvvWvZP5gnSpV7rAtXvWAlPbsXi5nQdPKIbQJMaYpo8wzBGz3L5VNqWceRkdKzlq9vbh4BoXsEXeQ++PViWN5xVwSSO3sRZUVPS167VLdGVnehnWy1arZtp6j1DLj9TXEyXHO+5t4jJoWqZWbsVKV+Gh6Ch5iR/5+UcAqksNLKNhrRzAtj0xOOWOz0Sn2ekvhhjO3MWTm90iMPWR60JRnMtwIZYvFJ37IADKBVzXNS1iuScLa7oj4VDTGjKEGQfEgWgahQt+6SznNP58uCUIjLZPuG+Q6LtpdRBpkraC8f8mMyTGI2ExdnISs2rMeUEkx+gJqe2/wQZf/Wc9P/HvjGxql6aIpswX0WfDGgPH/Fp1wEk367gys9RRLSdUbQEoEX0fzB5v4VlxUkNc+RHfjju1Mmlb0Dz2pKWmFuFdY/4TJoPkn1Zb6uGXs0wtcdZpxfJxLR2UbDPjEG8WmnUWWoUW09U87rcCNPXlk+CPZNFUzorxSyUuA+27cggloRNSRvza7mZhyAg20EWS1GlTHcdJE9nQhgm6DA7/wZh7qaMrjXn1oV6rXdwzszx796xEAqluoha850F/kg1JXaQUpP08XGTzD0ETY6d2DLZRJeif3TRZgzpghWvvvpH4iE10fZtpQlXba4T944ch4rKpWFoGockLT18JAjs2mOaQ7MlyW3M1Wlc3NCI3r6mHylRK6RzlABa+Ou2HOkXFVkNBRJBEl+HWtTfEui5";
 
 
         cred.seteBayToken(input);
 
-        //set Api Server Url
-        //input = "https://api.ebay.com/wsapi";
         input = "https://api.sandbox.ebay.com/wsapi";
 
         apiContext.setApiServerUrl(input);
