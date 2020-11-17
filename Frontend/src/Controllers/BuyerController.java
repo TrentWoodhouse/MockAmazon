@@ -128,15 +128,15 @@ public class BuyerController extends Controller {
         if (getPrimeStatus() == 1) {
             Global.io.print("checkRewards:\t\t\t\tcheck what rewards you have earned as a Congo Prime member");
         }
-        Global.io.print("flagListing:\t\t\tflag a listing for breaking Congo policies");
-        Global.io.print("checkCredibility:\t\tcheck your standing with the Congo community");
-        Global.io.print("viewOrders:\t\t\t\tview the current orders of your account");
-        Global.io.print("subscribe:\t\t\t\tsubscribe to a specific item on a regular basis for a reduced price");
-        Global.io.print("viewSubscriptions:\t\tview the current subscriptions for your account");
-        Global.io.print("browsingHistory:\t\tview the 5 most recent items in your browsing history");
-        Global.io.print("purchaseHistory:\t\tview the 5 most recent items in your purchase history");
-        Global.io.print("comparePrices:\t\tview top prices of similar listings on other retail sites");
-        Global.io.print("trackShipments:\t\tview shipments related to your account.");
+        Global.io.print("flagListing:\t\t\t\tflag a listing for breaking Congo policies");
+        Global.io.print("checkCredibility:\t\t\tcheck your standing with the Congo community");
+        Global.io.print("viewOrders:\t\t\t\t\tview the current orders of your account");
+        Global.io.print("subscribe:\t\t\t\t\tsubscribe to a specific item on a regular basis for a reduced price");
+        Global.io.print("viewSubscriptions:\t\t\tview the current subscriptions for your account");
+        Global.io.print("browsingHistory:\t\t\tview the 5 most recent items in your browsing history");
+        Global.io.print("purchaseHistory:\t\t\tview the 5 most recent items in your purchase history");
+        Global.io.print("comparePrices:\t\t\t\tview top prices of similar listings on other retail sites");
+        Global.io.print("trackShipments:\t\t\t\tview shipments related to your account.");
         return super.menu();
     }
 
@@ -957,30 +957,30 @@ public class BuyerController extends Controller {
         try {
             JSONObject user = new JSONObject(Global.sendGet("/buyer?name=" + Global.currUser.name).getMessage());
             JSONArray subscriptions = user.getJSONArray("subscriptions");
-            ArrayList<JSONObject> newSubs = new ArrayList<>();
+            ArrayList<String> newSubs = new ArrayList<>();
             for (int i = 0; i < subscriptions.length(); i++) {
-                newSubs.add(subscriptions.getJSONObject(i));
+                newSubs.add(subscriptions.getString(i));
             }
-            JSONObject newSub = new JSONObject();
-            newSub.put("id", id);
-            newSub.put("frequency", frequency);
+            String newSub = "";
+            newSub += id + ",";
+            newSub += frequency + ",";
 
             Date date = new Date();
             Calendar c = Calendar.getInstance();
             c.setTime(date);
             if (freq == 1) {
                 c.add(Calendar.DAY_OF_YEAR, 7);
-                newSub.put("discount", .99);
+                newSub += .99 + ",";
             } else if (freq == 2) {
                 c.add(Calendar.MONTH, 1);
-                newSub.put("discount", .97);
+                newSub += .97 + ",";
             } else if (freq == 3) {
                 c.add(Calendar.YEAR, 1);
-                newSub.put("discount", .95);
+                newSub += .95 + ",";
             }
             date = c.getTime();
 
-            newSub.put("next", date.toString());
+            newSub += date.toString();
 
             newSubs.add(newSub);
 
@@ -1006,8 +1006,17 @@ public class BuyerController extends Controller {
                 Global.io.print("Current Subscriptions: ");
                 Global.io.print("------------------------------------------------------------------------------------");
                 for (int i = 0; i < subs.length(); i++) {
-                    JSONObject sub = subs.getJSONObject(i);
-                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + sub.get("id")).getMessage());
+//                    JSONObject sub = subs.getJSONObject(i);
+
+                    String sub = subs.getString(i);
+                    String[] subArr = sub.split(",");
+
+                    int id = Integer.parseInt(subArr[0]);
+                    String frequency = subArr[1];
+                    double discount = Double.parseDouble(subArr[2]);
+                    String date = subArr[3];
+
+                    JSONArray arr = new JSONArray(Global.sendGet("/listing?id=" + id).getMessage());
                     JSONObject listing = arr.getJSONObject(0);
                     double biggestSale = listing.getDouble("salePercentage");
                     JSONObject seller = new JSONObject(Global.sendGet("/seller?id=" + listing.getInt("seller")).getMessage());
@@ -1016,14 +1025,14 @@ public class BuyerController extends Controller {
                     }
                     double price = listing.getDouble("cost")*biggestSale;
 
+                    price = price * discount;
                     if (user.getInt("congo") == 1) {
                         price = price*.85;
                     }
-                    price = price * sub.getDouble("discount");
-                    Global.io.print("Item:\t\t\t" + sub.get("name")
-                            + "\nPrice:\t\t\t" + price + "(" + ((1-sub.getDouble("discount"))*100) + "% discount)"
-                            + "\nFrequency:\t\tOnce per " + sub.get("frequency")
-                            + "\nNext Order Date:\t" + sub.get("next")
+                    Global.io.print("Item:\t\t\t\t" + listing.get("name")
+                            + "\nPrice:\t\t\t\t" + df.format(price) + " (" + df.format((1-discount)*100) + "% discount)"
+                            + "\nFrequency:\t\t\tOnce per " + frequency
+                            + "\nNext Order Date:\t" + date
                             + "\n------------------------------------------------------------------------------------");
                 }
             }
